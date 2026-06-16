@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goal Tracker Admin Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen flex flex-col">
+
+    <header class="bg-gray-900 text-white p-4 shadow-md sticky top-0 z-40 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+            <span class="text-xl font-extrabold tracking-tight">🏆 GoalTracker Dashboard</span>
+        </div>
+        
+        <div id="nav-auth-container">
+            <button id="btn-show-login" onclick="openLoginModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded text-sm transition">
+                Login
+            </button>
+            <button id="btn-admin-logout" onclick="handleLogout()" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold py-1.5 px-4 rounded text-sm transition">
+                 Logout
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 flex-col md:flex-row min-h-0">
+        
+        <nav class="bg-gray-800 text-white w-full md:w-64 space-y-2 px-2 py-4 flex flex-row md:flex-col justify-start overflow-x-auto md:overflow-x-visible">
+            <p class="hidden md:block text-xs uppercase font-bold text-gray-400 px-4 pt-2">Public Views</p>
+            <button onclick="switchView('leaderboard-panel')" class="view-btn flex-shrink-0 text-left block py-2 px-4 rounded bg-gray-700 text-white font-medium text-sm">📊 Leaderboard</button>
+            <button onclick="switchView('history-panel')" class="view-btn flex-shrink-0 text-left block py-2 px-4 rounded hover:bg-gray-700 text-gray-300 font-medium text-sm">📅 Match History</button>
+            
+            <p class="hidden md:block text-xs uppercase font-bold text-gray-400 px-4 pt-6">Admin Controls</p>
+            <button id="nav-entry-btn" onclick="switchView('admin-panel')" class="view-btn flex-shrink-0 text-left block py-2 px-4 rounded text-gray-500 font-medium text-sm cursor-not-allowed" disabled>🔒 Match Entry & Edit</button>
+            <button id="nav-archive-btn" onclick="switchView('archive-panel')" class="view-btn flex-shrink-0 text-left block py-2 px-4 rounded text-gray-500 font-medium text-sm cursor-not-allowed" disabled>🔒 Audit Log (Archive)</button>
+        </nav>
+
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+            
+            <section id="leaderboard-panel" class="dashboard-view space-y-6">
+                <h3 class="text-2xl font-bold text-gray-800">Leaderboard</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-blue-100 border border-blue-300 p-4 rounded-lg">
+                        <p class="text-sm text-blue-800 font-bold uppercase">📅 Total Matches</p>
+                        <p id="total-matches-count" class="text-2xl font-black text-blue-900">0</p>
+                    </div>
+                    <div class="bg-yellow-100 border border-yellow-300 p-4 rounded-lg">
+                        <p class="text-sm text-yellow-800 font-bold uppercase">🥇 Top Scorer</p>
+                        <p id="top-player" class="text-2xl font-black text-yellow-900">-</p>
+                    </div>
+                    <div class="bg-gray-200 border border-gray-300 p-4 rounded-lg">
+                        <p class="text-sm text-gray-700 font-bold uppercase">🥈 Second Top</p>
+                        <p id="second-player" class="text-2xl font-black text-gray-800">-</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-700 text-sm uppercase">
+                                <th class="p-3 border">Rank</th>
+                                <th class="p-3 border">Player</th>
+                                <th class="p-3 border">Activity Status</th>
+                                <th class="p-3 border text-right">Total Goals</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-list"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="history-panel" class="dashboard-view hidden space-y-6">
+                <h3 class="text-2xl font-bold text-gray-800">All Match Results</h3>
+                <div class="bg-white p-4 rounded-lg shadow-sm border overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-700 text-sm uppercase">
+                                <th class="p-3 border">Date</th>
+                                <th class="p-3 border">Player 1</th>
+                                <th class="p-3 border text-center">Final Score</th>
+                                <th class="p-3 border">Player 2</th>
+                                <th class="p-3 border text-center">Outcome Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-list"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="admin-panel" class="dashboard-view hidden space-y-8">
+                <div class="bg-white p-6 rounded-lg shadow-sm border">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Record New Match</h3>
+                    <form id="match-form" onsubmit="addMatch(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">Player 1 Name</label>
+                            <input type="text" id="p1-name" class="w-full p-2 border rounded" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">Player 1 Score</label>
+                            <input type="number" id="p1-score" min="0" class="w-full p-2 border rounded" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">Player 2 Name</label>
+                            <input type="text" id="p2-name" class="w-full p-2 border rounded" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">Player 2 Score</label>
+                            <input type="number" id="p2-score" min="0" class="w-full p-2 border rounded" required>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">Match Date</label>
+                            <input type="date" id="match-date" class="w-full p-2 border rounded" required>
+                        </div>
+                        <div class="md:col-span-2">
+                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition">Save Match Result</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm border">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Manage & Edit Matches <span class="text-xs text-red-500 font-normal">(Deletions are disabled)</span></h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-700 text-sm uppercase">
+                                    <th class="p-3 border">Date</th>
+                                    <th class="p-3 border">Matchup</th>
+                                    <th class="p-3 border text-center">Score</th>
+                                    <th class="p-3 border text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-match-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="archive-panel" class="dashboard-view hidden space-y-6">
+                <h3 class="text-2xl font-bold text-gray-800">System Data Modification Logs</h3>
+                <div class="bg-white p-6 rounded-lg shadow-sm border">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-700 text-sm uppercase">
+                                <th class="p-3 border">Timestamp</th>
+                                <th class="p-3 border">Match Reference</th>
+                                <th class="p-3 border">Changes Record</th>
+                                <th class="p-3 border bg-red-50 text-red-700">Required Change Reason / Cause</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archive-list"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="login-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md relative">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Admin Login</h2>
+            <div id="login-error" class="hidden bg-red-100 text-red-700 p-3 rounded mb-4 text-sm font-medium"></div>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">User ID</label>
+                    <input type="text" id="username" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Edit Match Record</h3>
+            <div id="modal-error" class="hidden bg-red-100 text-red-700 p-2 rounded mb-3 text-xs font-semibold"></div>
+            <form id="edit-form" onsubmit="saveEdit(event)">
+                <input type="hidden" id="edit-match-id">
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600">Player 1 Name</label>
+                        <input type="text" id="edit-p1-name" class="w-full p-2 border rounded text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600">Player 1 Score</label>
+                        <input type="number" id="edit-p1-score" min="0" class="w-full p-2 border rounded text-sm" oninput="checkScoreChange()" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600">Player 2 Name</label>
+                        <input type="text" id="edit-p2-name" class="w-full p-2 border rounded text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600">Player 2 Score</label>
+                        <input type="number" id="edit-p2-score" min="0" class="w-full p-2 border rounded text-sm" oninput="checkScoreChange()" required>
+                    </div>
+                </div>
+                <div id="reason-container" class="mb-4 hidden bg-yellow-50 p-3 rounded border border-yellow-200">
+                    <label class="block text-xs font-bold text-yellow-800 mb-1">⚠️ Change Reason / Cause (Mandatory for Score Modifications)</label>
+                    <textarea id="edit-reason" rows="2" class="w-full p-2 border rounded text-sm" placeholder="Explain why this score change is accurate..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-400">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let matches = []; 
+        let archive = [];
+        let selectedMatchForEdit = null;
+        let isAdminLoggedIn = false; 
+        window.onload = function() {
+            if (localStorage.getItem('goal_tracker_archive')) {
+                archive = JSON.parse(localStorage.getItem('goal_tracker_archive'));
+            }
+            fetchMatchesFromDB(); 
+        };
+
+        async function fetchMatchesFromDB() {
+            try {
+                const response = await fetch('http://192.168.0.102:5000/api/matches');
+                const data = await response.json();
+                
+                matches = data.map(m => ({
+                    id: m.match_id || m._id,
+                    p1Name: m.player1_name,
+                    p1Score: m.player1_score,
+                    p2Name: m.player2_name,
+                    p2Score: m.player2_score,
+                    date: m.match_date ? m.match_date.split('T')[0] : 'N/A'
+                }));
+                
+                renderAllDashboards();
+            } catch (error) {
+                console.error("Database Failed to connect", error);
+            }
+        }
+
+        function openLoginModal() {
+            document.getElementById('login-modal').classList.remove('hidden');
+        }
+        function closeLoginModal() {
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('login-form').reset();
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const errorDiv = document.getElementById('login-error');
+
+            if (user === "admin" && pass === "artisan123") {
+                isAdminLoggedIn = true;
+                
+                document.getElementById('btn-show-login').classList.add('hidden');
+                document.getElementById('btn-admin-logout').classList.remove('hidden');
+
+                const entryBtn = document.getElementById('nav-entry-btn');
+                entryBtn.disabled = false;
+                entryBtn.classList.remove('text-gray-500', 'cursor-not-allowed');
+                entryBtn.classList.add('text-gray-300', 'hover:bg-gray-700');
+                entryBtn.innerText = "📝 Match Entry & Edit";
+
+                const archiveBtn = document.getElementById('nav-archive-btn');
+                archiveBtn.disabled = false;
+                archiveBtn.classList.remove('text-gray-500', 'cursor-not-allowed');
+                archiveBtn.classList.add('text-gray-300', 'hover:bg-gray-700');
+                archiveBtn.innerText = "📦 Audit Log (Archive)";
+
+                closeLoginModal();
+                alert("Authorization Successful. Admin Panel Unlocked!");
+            } else {
+                errorDiv.innerText = "Invalid Credentials. Access Restricted.";
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            isAdminLoggedIn = false;
+            
+            document.getElementById('btn-show-login').classList.remove('hidden');
+            document.getElementById('btn-admin-logout').classList.add('hidden');
+
+            const entryBtn = document.getElementById('nav-entry-btn');
+            entryBtn.disabled = true;
+            entryBtn.classList.add('text-gray-500', 'cursor-not-allowed');
+            entryBtn.classList.remove('text-gray-300', 'hover:bg-gray-700');
+            entryBtn.innerText = "🔒 Match Entry & Edit";
+
+            const archiveBtn = document.getElementById('nav-archive-btn');
+            archiveBtn.disabled = true;
+            archiveBtn.classList.add('text-gray-500', 'cursor-not-allowed');
+            archiveBtn.classList.remove('text-gray-300', 'hover:bg-gray-700');
+            archiveBtn.innerText = "🔒 Audit Log (Archive)";
+
+            switchView('leaderboard-panel');
+            alert("Admin session terminated.");
+        }
+
+        function switchView(panelId) {
+            if((panelId === 'admin-panel' || panelId === 'archive-panel') && !isAdminLoggedIn) {
+                alert("Restricted Access");
+                return;
+            }
+
+            document.querySelectorAll('.dashboard-view').forEach(view => view.classList.add('hidden'));
+            document.getElementById(panelId).classList.remove('hidden');
+            
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.classList.remove('bg-gray-700', 'text-white');
+                if(!btn.disabled) btn.classList.add('text-gray-300');
+            });
+            event.currentTarget.classList.add('bg-gray-700', 'text-white');
+
+            renderAllDashboards();
+        }
+
+        async function addMatch(e) {
+            e.preventDefault();
+            if(!isAdminLoggedIn) return;
+
+            const newMatch = {
+                player1_name: document.getElementById('p1-name').value,
+                player1_score: parseInt(document.getElementById('p1-score').value),
+                player2_name: document.getElementById('p2-name').value,
+                player2_score: parseInt(document.getElementById('p2-score').value),
+                match_date: document.getElementById('match-date').value
+            };
+
+            try {
+                const response = await fetch('http://192.168.0.102:5000/api/matches', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newMatch) 
+                });
+
+                if (response.ok) {
+                    document.getElementById('match-form').reset();
+                    await fetchMatchesFromDB(); 
+                    alert("Match recorded successfully!");
+                } else {
+                    alert("Failed to record match.");
+                }
+            } catch (error) {
+                console.error("Error saving match:", error);
+            }
+        }
+
+        function openEditModal(id) {
+            if(!isAdminLoggedIn) return;
+            selectedMatchForEdit = matches.find(m => String(m.id) === String(id));
+            if (!selectedMatchForEdit) return;
+
+            document.getElementById('edit-match-id').value = selectedMatchForEdit.id;
+            document.getElementById('edit-p1-name').value = selectedMatchForEdit.p1Name;
+            document.getElementById('edit-p1-score').value = selectedMatchForEdit.p1Score;
+            document.getElementById('edit-p2-name').value = selectedMatchForEdit.p2Name;
+            document.getElementById('edit-p2-score').value = selectedMatchForEdit.p2Score;
+            document.getElementById('edit-reason').value = "";
+            document.getElementById('modal-error').classList.add('hidden');
+            checkScoreChange();
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function checkScoreChange() {
+            const currentP1Score = parseInt(document.getElementById('edit-p1-score').value);
+            const currentP2Score = parseInt(document.getElementById('edit-p2-score').value);
+            const reasonContainer = document.getElementById('reason-container');
+
+            if (selectedMatchForEdit && (currentP1Score !== selectedMatchForEdit.p1Score || currentP2Score !== selectedMatchForEdit.p2Score)) {
+                reasonContainer.classList.remove('hidden');
+            } else {
+                reasonContainer.classList.add('hidden');
+            }
+        }
+
+        async function saveEdit(e) {
+            e.preventDefault();
+            if(!isAdminLoggedIn) return;
+
+            const id = document.getElementById('edit-match-id').value;
+            const p1N = document.getElementById('edit-p1-name').value;
+            const p1S = parseInt(document.getElementById('edit-p1-score').value);
+            const p2N = document.getElementById('edit-p2-name').value;
+            const p2S = parseInt(document.getElementById('edit-p2-score').value);
+            const reason = document.getElementById('edit-reason').value.trim();
+
+            const matchIndex = matches.findIndex(m => String(m.id) === String(id));
+            if (matchIndex === -1) return;
+
+            const original = matches[matchIndex];
+            const scoreChanged = (original.p1Score !== p1S || original.p2Score !== p2S);
+
+            if (scoreChanged && !reason) {
+                const modalErr = document.getElementById('modal-error');
+                modalErr.innerText = "Data Integrity Rule: A justification cause is mandatory to update scores.";
+                modalErr.classList.remove('hidden');
+                return;
+            }
+
+          
+            const updatedMatchData = {
+                player1_name: p1N,
+                player1_score: p1S,
+                player2_name: p2N,
+                player2_score: p2S,
+                match_date: original.date
+            };
+
+            try {
+                
+                const response = await fetch(`http://192.168.0.102:5000/api/matches/${id}`, {
+                    method: 'PUT', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedMatchData)
+                });
+
+                if (response.ok) {
+                    if (scoreChanged) {
+                        const newLog = {
+                            timestamp: new Date().toLocaleString(),
+                            matchRef: `${original.date}: ${original.p1Name} vs ${original.p2Name}`,
+                            changes: `Scores changed from [${original.p1Score}-${original.p2Score}] to [${p1S}-${p2S}]`,
+                            cause: reason
+                        };
+                        archive.push(newLog);
+                        localStorage.setItem('goal_tracker_archive', JSON.stringify(archive));
+                    }
+
+                    closeModal();
+                    await fetchMatchesFromDB(); 
+                    alert("Match data updated successfully in Database!");
+                } else {
+                    alert("Failed to update match in Database. Check your API Route.");
+                }
+            } catch (error) {
+                console.error("Error updating match:", error);
+                alert("Server connection error.");
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+        
+        function renderAllDashboards() {
+            renderLeaderboard();
+            renderHistory();
+            renderAdminMatches();
+            renderArchive();
+        }
+
+        function renderLeaderboard() {
+            let playerMap = {};
+            matches.forEach(m => {
+                playerMap[m.p1Name] = (playerMap[m.p1Name] || 0) + m.p1Score;
+                playerMap[m.p2Name] = (playerMap[m.p2Name] || 0) + m.p2Score;
+            });
+
+            let sortedPlayers = Object.keys(playerMap).map(name => ({
+                name, goals: playerMap[name]
+            })).sort((a,b) => b.goals - a.goals);
+
+            document.getElementById('top-player').innerText = sortedPlayers[0] ? `${sortedPlayers[0].name} (${sortedPlayers[0].goals} Goals)` : "None";
+            document.getElementById('second-player').innerText = sortedPlayers[1] ? `${sortedPlayers[1].name} (${sortedPlayers[1].goals} Goals)` : "None";
+            document.getElementById('total-matches-count').innerText = matches.length;
+
+            const container = document.getElementById('leaderboard-list');
+            container.innerHTML = sortedPlayers.map((p, idx) => {
+                const matchesPlayed = matches.filter(m => m.p1Name === p.name || m.p2Name === p.name).length;
+                const activityBadge = matchesPlayed >= 2 ? `<span class="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-0.5 rounded">🔥 High Activity</span>` : `<span class="bg-gray-100 text-gray-800 text-xs font-bold px-2.5 py-0.5 rounded">💤 Inactive</span>`;
+                
+                return `
+                    <tr class="border-b">
+                        <td class="p-3 font-bold">${idx + 1}</td>
+                        <td class="p-3 font-semibold text-gray-700">${p.name}</td>
+                        <td class="p-3">${activityBadge}</td>
+                        <td class="p-3 text-right font-black text-blue-600 font-mono">${p.goals}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+            container.innerHTML = matches.map(m => {
+                let outcome = "Draw / Tie";
+                if (m.p1Score > m.p2Score) outcome = `<span class="text-green-600 font-bold">${m.p1Name} Wins</span>`;
+                if (m.p2Score > m.p1Score) outcome = `<span class="text-green-600 font-bold">${m.p2Name} Wins</span>`;
+                return `
+                    <tr class="border-b text-sm">
+                        <td class="p-3 text-gray-500">${m.date}</td>
+                        <td class="p-3 font-medium">${m.p1Name}</td>
+                        <td class="p-3 text-center font-mono font-bold bg-gray-50">${m.p1Score} - ${m.p2Score}</td>
+                        <td class="p-3 font-medium">${m.p2Name}</td>
+                        <td class="p-3 text-center">${outcome}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderAdminMatches() {
+            const container = document.getElementById('admin-match-list');
+            if(!container) return;
+            container.innerHTML = matches.map(m => `
+                <tr class="hover:bg-gray-50 border-b">
+                    <td class="p-3 text-sm">${m.date}</td>
+                    <td class="p-3 font-semibold text-sm">${m.p1Name} vs ${m.p2Name}</td>
+                    <td class="p-3 text-center font-mono text-sm">${m.p1Score} - ${m.p2Score}</td>
+                    <td class="p-3 text-center"><button onclick="openEditModal('${m.id}')" class="text-blue-600 hover:underline text-sm font-bold">Edit</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderArchive() {
+            const container = document.getElementById('archive-list');
+            if(!container) return;
+            if (archive.length === 0) {
+                container.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400 text-sm">No items modified yet. Log is clean.</td></tr>`;
+                return;
+            }
+            container.innerHTML = archive.map(a => `
+                <tr class="border-b text-xs">
+                    <td class="p-3 text-gray-500 font-mono">${a.timestamp}</td>
+                    <td class="p-3 font-medium">${a.matchRef}</td>
+                    <td class="p-3 text-blue-700 font-medium">${a.changes}</td>
+                    <td class="p-3 bg-yellow-50 text-yellow-900 font-bold italic border-l-2 border-yellow-400">${a.cause}</td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
