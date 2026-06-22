@@ -53,7 +53,16 @@ async function ensureTournamentTables() {
 
 app.get('/api/matches', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM view_match_history;');
+        const result = await pool.query(`
+            SELECT
+                match_id,
+                player1_name,
+                player1_score,
+                player2_name,
+                player2_score,
+                to_char(match_date, 'YYYY-MM-DD') AS match_date
+            FROM view_match_history;
+        `);
         res.json(result.rows);
     } catch (err) {
         console.error("GET Matches Error:", err.message);
@@ -112,8 +121,8 @@ app.get('/api/tournament-data', async (req, res) => {
                 id,
                 name,
                 format,
-                start_date AS "startDate",
-                end_date AS "endDate",
+                to_char(start_date, 'YYYY-MM-DD') AS "startDate",
+                to_char(end_date, 'YYYY-MM-DD') AS "endDate",
                 status,
                 champion,
                 created_at AS "createdAt"
