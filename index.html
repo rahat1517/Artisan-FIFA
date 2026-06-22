@@ -5,8 +5,401 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Goal Tracker Admin Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes introFadeOut {
+            0%, 78% { opacity: 1; visibility: visible; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+
+        @keyframes introPanelIn {
+            0% { opacity: 0; transform: translateY(18px) scale(0.96); }
+            18%, 82% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-10px) scale(0.98); }
+        }
+
+        @keyframes footballFly {
+            0% { transform: translate(-12vw, 42vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            45% { transform: translate(42vw, 8vh) rotate(420deg); opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translate(112vw, 36vh) rotate(920deg); opacity: 0; }
+        }
+
+        @keyframes footballBounce {
+            0%, 100% { transform: translateY(0) rotate(-8deg); }
+            50% { transform: translateY(-14px) rotate(10deg); }
+        }
+
+        @keyframes stadiumSweep {
+            0% { transform: translateX(-18%) skewX(-12deg); opacity: .12; }
+            45% { opacity: .28; }
+            100% { transform: translateX(118%) skewX(-12deg); opacity: .12; }
+        }
+
+        @keyframes cupBallDrift {
+            0% { transform: translate(-10vw, 82vh) rotate(0deg); opacity: 0; }
+            12% { opacity: .8; }
+            50% { transform: translate(48vw, 16vh) rotate(540deg); opacity: .9; }
+            88% { opacity: .75; }
+            100% { transform: translate(112vw, 70vh) rotate(1080deg); opacity: 0; }
+        }
+
+        @keyframes cupBallDriftReverse {
+            0% { transform: translate(110vw, 24vh) rotate(0deg); opacity: 0; }
+            15% { opacity: .7; }
+            55% { transform: translate(45vw, 78vh) rotate(-620deg); opacity: .9; }
+            100% { transform: translate(-12vw, 34vh) rotate(-1120deg); opacity: 0; }
+        }
+
+        @keyframes flagDriftOne {
+            0% { transform: translate(0, 0) rotate(-5deg); }
+            22% { transform: translate(34vw, 12vh) rotate(7deg); }
+            48% { transform: translate(68vw, 4vh) rotate(-8deg); }
+            74% { transform: translate(48vw, 54vh) rotate(6deg); }
+            100% { transform: translate(0, 0) rotate(-5deg); }
+        }
+
+        @keyframes flagDriftTwo {
+            0% { transform: translate(0, 0) rotate(6deg); }
+            24% { transform: translate(-28vw, 18vh) rotate(-7deg); }
+            52% { transform: translate(-74vw, 42vh) rotate(8deg); }
+            78% { transform: translate(-35vw, 62vh) rotate(-5deg); }
+            100% { transform: translate(0, 0) rotate(6deg); }
+        }
+
+        @keyframes flagDriftThree {
+            0% { transform: translate(0, 0) rotate(-4deg); }
+            20% { transform: translate(18vw, 38vh) rotate(8deg); }
+            45% { transform: translate(54vw, 64vh) rotate(-7deg); }
+            70% { transform: translate(74vw, 18vh) rotate(5deg); }
+            100% { transform: translate(0, 0) rotate(-4deg); }
+        }
+
+        @keyframes flagDriftFour {
+            0% { transform: translate(0, 0) rotate(4deg); }
+            26% { transform: translate(-22vw, 45vh) rotate(-8deg); }
+            55% { transform: translate(-62vw, 12vh) rotate(7deg); }
+            82% { transform: translate(-38vw, 68vh) rotate(-6deg); }
+            100% { transform: translate(0, 0) rotate(4deg); }
+        }
+
+        @keyframes crowdPulse {
+            0%, 100% { opacity: .22; transform: scaleY(1); }
+            50% { opacity: .42; transform: scaleY(1.08); }
+        }
+
+        .intro-overlay {
+            animation: introFadeOut 4.8s ease forwards;
+            pointer-events: none;
+        }
+
+        .intro-card {
+            animation: introPanelIn 4.8s ease forwards;
+        }
+
+        .football-fly {
+            animation: footballFly 4.4s cubic-bezier(.2,.8,.25,1) forwards;
+        }
+
+        .football-fly:nth-child(2) {
+            animation-delay: .35s;
+            top: 18%;
+            font-size: 2rem;
+        }
+
+        .football-fly:nth-child(3) {
+            animation-delay: .75s;
+            top: 58%;
+            font-size: 1.6rem;
+        }
+
+        .football-bounce {
+            animation: footballBounce 1s ease-in-out infinite;
+        }
+
+        .world-cup-bg {
+            background:
+                radial-gradient(circle at 50% 120%, rgba(250, 204, 21, .24), transparent 30%),
+                radial-gradient(circle at 14% 8%, rgba(248, 250, 252, .18), transparent 12%),
+                radial-gradient(circle at 86% 8%, rgba(248, 250, 252, .16), transparent 12%),
+                linear-gradient(135deg, rgba(22, 163, 74, .96), rgba(6, 95, 70, .96) 42%, rgba(17, 24, 39, .98));
+        }
+
+        .world-cup-bg::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,.18)) 50% 50% / 2px 100% no-repeat,
+                linear-gradient(rgba(255,255,255,.16), rgba(255,255,255,.16)) 50% 50% / 100% 2px no-repeat,
+                radial-gradient(ellipse at center, transparent 0 11%, rgba(255,255,255,.18) 11.3% 11.8%, transparent 12.2%),
+                repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 8vw, rgba(255,255,255,.1) 8vw 16vw);
+            opacity: .62;
+        }
+
+        .world-cup-bg::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 18vh;
+            transform-origin: bottom;
+            animation: crowdPulse 3.5s ease-in-out infinite;
+            background:
+                repeating-linear-gradient(90deg,
+                    rgba(239, 68, 68, .75) 0 10px,
+                    rgba(250, 204, 21, .75) 10px 20px,
+                    rgba(59, 130, 246, .75) 20px 30px,
+                    rgba(255, 255, 255, .72) 30px 40px,
+                    rgba(17, 24, 39, .75) 40px 50px);
+            clip-path: polygon(0 42%, 8% 30%, 17% 48%, 26% 26%, 35% 44%, 45% 25%, 56% 44%, 66% 28%, 77% 48%, 88% 30%, 100% 43%, 100% 100%, 0 100%);
+        }
+
+        .stadium-light {
+            position: absolute;
+            top: -16vh;
+            width: 26vw;
+            height: 140vh;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .26), transparent);
+            filter: blur(8px);
+            animation: stadiumSweep 9s linear infinite;
+        }
+
+        .stadium-light:nth-child(2) {
+            animation-delay: -4.5s;
+            width: 18vw;
+        }
+
+        .cup-ball {
+            position: absolute;
+            font-size: 2.5rem;
+            animation: cupBallDrift 15s cubic-bezier(.25,.75,.3,1) infinite;
+            opacity: .85;
+            text-shadow: 0 10px 24px rgba(0,0,0,.32);
+        }
+
+        .cup-ball:nth-child(4) {
+            font-size: 1.8rem;
+            animation: cupBallDriftReverse 18s cubic-bezier(.25,.75,.3,1) infinite;
+            animation-delay: -7s;
+        }
+
+        .cup-ball:nth-child(5) {
+            font-size: 1.4rem;
+            animation-delay: -10s;
+        }
+
+        .cup-flag {
+            position: absolute;
+            top: 14vh;
+            width: 86px;
+            height: 32px;
+            border-radius: 3px;
+            animation-duration: 28s;
+            animation-iteration-count: infinite;
+            animation-timing-function: ease-in-out;
+            box-shadow: 0 10px 24px rgba(0,0,0,.3);
+            overflow: hidden;
+            opacity: .95;
+            outline: 1px solid rgba(255,255,255,.42);
+            filter: drop-shadow(0 8px 12px rgba(0,0,0,.35));
+            transition: opacity .25s ease, visibility .25s ease;
+        }
+
+        .cup-flag.flag-hidden-over-content {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .cup-flag::before,
+        .cup-flag::after {
+            content: "";
+            position: absolute;
+        }
+
+        .flag-argentina {
+            left: 4vw;
+            top: 5rem;
+            animation-name: flagDriftOne;
+            background: linear-gradient(#75aadb 0 33%, #fff 33% 66%, #75aadb 66%);
+        }
+
+        .flag-argentina::before {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #f6b40e;
+            left: 39px;
+            top: 12px;
+        }
+
+        .flag-brazil {
+            right: 4vw;
+            top: 8rem;
+            animation-name: flagDriftTwo;
+            animation-duration: 31s;
+            background: #229e45;
+            animation-delay: -.4s;
+        }
+
+        .flag-brazil::before {
+            width: 38px;
+            height: 20px;
+            background: #f8df00;
+            transform: rotate(45deg);
+            left: 24px;
+            top: 6px;
+        }
+
+        .flag-brazil::after {
+            width: 14px;
+            height: 14px;
+            border-radius: 999px;
+            background: #002776;
+            left: 36px;
+            top: 9px;
+        }
+
+        .flag-germany {
+            left: 8vw;
+            top: 36vh;
+            animation-name: flagDriftThree;
+            animation-duration: 34s;
+            background: linear-gradient(#000 0 33%, #dd0000 33% 66%, #ffce00 66%);
+            animation-delay: -.8s;
+        }
+
+        .flag-italy {
+            right: 10vw;
+            top: 38vh;
+            animation-name: flagDriftFour;
+            animation-duration: 29s;
+            background: linear-gradient(90deg, #008c45 0 33%, #f4f5f0 33% 66%, #cd212a 66%);
+            animation-delay: -1.2s;
+        }
+
+        .flag-uruguay {
+            left: 16vw;
+            top: 72vh;
+            background:
+                radial-gradient(circle at 14px 7px, #fcd116 0 5px, transparent 5.5px),
+                repeating-linear-gradient(#fff 0 3px, #0038a8 3px 6px);
+            animation-name: flagDriftOne;
+            animation-duration: 36s;
+            animation-delay: -1.6s;
+        }
+
+        .flag-uruguay::before {
+            width: 28px;
+            height: 14px;
+            background: #fff;
+            left: 0;
+            top: 0;
+        }
+
+        .flag-france {
+            right: 18vw;
+            top: 74vh;
+            background: linear-gradient(90deg, #0055a4 0 33%, #fff 33% 66%, #ef4135 66%);
+            animation-name: flagDriftTwo;
+            animation-duration: 33s;
+            animation-delay: -2s;
+        }
+
+        .flag-spain {
+            left: 42vw;
+            top: 12vh;
+            background: linear-gradient(#aa151b 0 25%, #f1bf00 25% 75%, #aa151b 75%);
+            animation-name: flagDriftThree;
+            animation-duration: 30s;
+            animation-delay: -2.4s;
+        }
+
+        .flag-england {
+            right: 42vw;
+            top: 58vh;
+            background:
+                linear-gradient(90deg, transparent 0 42%, #ce1124 42% 58%, transparent 58%),
+                linear-gradient(transparent 0 35%, #ce1124 35% 65%, transparent 65%),
+                #fff;
+            animation-name: flagDriftFour;
+            animation-duration: 35s;
+            animation-delay: -2.8s;
+        }
+
+        @media (max-width: 768px) {
+            .cup-flag {
+                width: 58px;
+                height: 22px;
+            }
+
+            .flag-argentina { left: 2vw; top: 5rem; }
+            .flag-brazil { right: 2vw; top: 7rem; }
+            .flag-germany { left: 4vw; top: 34vh; }
+            .flag-italy { right: 5vw; top: 38vh; }
+            .flag-uruguay { left: 8vw; top: 72vh; }
+            .flag-france { right: 8vw; top: 74vh; }
+            .flag-spain { left: 35vw; top: 18vh; }
+            .flag-england { right: 35vw; top: 60vh; }
+
+            .flag-argentina::before {
+                width: 6px;
+                height: 6px;
+                left: 26px;
+                top: 8px;
+            }
+
+            .flag-brazil::before {
+                width: 28px;
+                height: 15px;
+                left: 15px;
+                top: 4px;
+            }
+
+            .flag-brazil::after {
+                width: 10px;
+                height: 10px;
+                left: 24px;
+                top: 6px;
+            }
+        }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen flex flex-col">
+<body class="bg-emerald-950 font-sans min-h-screen flex flex-col relative overflow-hidden">
+
+    <div class="world-cup-bg fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div class="stadium-light"></div>
+        <div class="stadium-light"></div>
+        <div class="cup-ball">⚽</div>
+        <div class="cup-ball">⚽</div>
+        <div class="cup-ball">⚽</div>
+    </div>
+
+    <div class="world-cup-flags fixed inset-0 z-30 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div class="cup-flag flag-argentina" title="Argentina"></div>
+        <div class="cup-flag flag-brazil" title="Brazil"></div>
+        <div class="cup-flag flag-germany" title="Germany"></div>
+        <div class="cup-flag flag-italy" title="Italy"></div>
+        <div class="cup-flag flag-uruguay" title="Uruguay"></div>
+        <div class="cup-flag flag-france" title="France"></div>
+        <div class="cup-flag flag-spain" title="Spain"></div>
+        <div class="cup-flag flag-england" title="England"></div>
+    </div>
+
+    <div id="top-scorer-intro" class="intro-overlay hidden fixed inset-0 z-50 overflow-hidden bg-gray-950/90 text-white">
+        <div class="football-fly absolute left-0 top-1/3 text-5xl">⚽</div>
+        <div class="football-fly absolute left-0 text-4xl">⚽</div>
+        <div class="football-fly absolute left-0 text-3xl">⚽</div>
+        <div class="intro-card min-h-screen flex items-center justify-center px-4">
+            <div class="text-center">
+                <div class="football-bounce text-6xl mb-5">⚽</div>
+                <p class="text-sm uppercase tracking-widest text-yellow-300 font-black">Current Top Scorer</p>
+                <h1 id="intro-top-scorer-name" class="mt-3 text-4xl md:text-6xl font-black leading-tight"></h1>
+                <p id="intro-top-scorer-goals" class="mt-3 text-xl md:text-2xl text-gray-200 font-bold"></p>
+            </div>
+        </div>
+    </div>
 
     <header class="bg-gray-900 text-white p-4 shadow-md sticky top-0 z-40 flex justify-between items-center">
         <div class="flex items-center space-x-2">
@@ -17,13 +410,11 @@
             <button id="btn-show-login" onclick="openLoginModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded text-sm transition">
                 Login
             </button>
-            <button id="btn-admin-logout" onclick="handleLogout()" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold py-1.5 px-4 rounded text-sm transition">
-                Logout
             </button>
         </div>
     </header>
 
-    <div class="flex flex-1 flex-col md:flex-row min-h-0">
+    <div class="relative z-10 flex flex-1 flex-col md:flex-row min-h-0">
 
         <nav class="bg-gray-800 text-white w-full md:w-64 space-y-2 px-2 py-4 flex flex-row md:flex-col justify-start overflow-x-auto md:overflow-x-visible">
             <p class="hidden md:block text-xs uppercase font-bold text-gray-400 px-4 pt-2">Public Views</p>
@@ -63,8 +454,11 @@
                                 <th class="p-3 border">Player</th>
                                 <th class="p-3 border">Activity Status</th>
                                 
+                                <th class="p-3 border text-right">Total Matches</th>
                                 <th class="p-3 border text-right">Total Wins</th>
+                                <th class="p-3 border text-right">Win %</th>
                                 <th class="p-3 border text-right">Total Goals</th>
+                                <th class="p-3 border text-right">G/M</th>
                             </tr>
                         </thead>
                         <tbody id="leaderboard-list"></tbody>
@@ -74,6 +468,22 @@
 
             <section id="history-panel" class="dashboard-view hidden space-y-6">
                 <h3 class="text-2xl font-bold text-gray-800">All Match Results</h3>
+                <div class="bg-white p-4 rounded-lg shadow-sm border">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">Player 1</label>
+                            <select id="history-filter-player-one" onchange="renderHistory()" class="w-full p-2 border rounded bg-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">Player 2</label>
+                            <select id="history-filter-player-two" onchange="renderHistory()" class="w-full p-2 border rounded bg-white"></select>
+                        </div>
+                        <button type="button" onclick="clearHistoryFilter()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded">
+                            Clear Filter
+                        </button>
+                    </div>
+                    <div id="history-filter-summary" class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3"></div>
+                </div>
                 <div class="bg-white p-4 rounded-lg shadow-sm border overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -395,15 +805,18 @@
         let tournamentMatches = [];
         let selectedMatchForEdit = null;
         let isAdminLoggedIn = false;
-        const API_BASE_URL = 'http://192.168.0.102:5000';
+        let topScorerIntroShown = false;
+        const API_BASE_URL = window.GOAL_TRACKER_API_BASE_URL || (window.location.protocol === 'file:' ? 'http://localhost:5000' : window.location.origin);
 
         window.onload = async function() {
             if (localStorage.getItem('goal_tracker_archive')) {
                 archive = JSON.parse(localStorage.getItem('goal_tracker_archive'));
             }
             await loadTournamentLocalData();
-            fetchMatchesFromDB();
+            await fetchMatchesFromDB();
             renderAllDashboards();
+            showTopScorerIntro();
+            startFlagContentCollisionWatcher();
         };
 
         async function fetchMatchesFromDB() {
@@ -425,6 +838,81 @@
                 console.error("Database Failed to connect", error);
                 renderAllDashboards();
             }
+        }
+
+        function getLeaderboardStats() {
+            const playerMap = {};
+            const winsMap = {};
+            const matchesMap = {};
+
+            matches.forEach(m => {
+                playerMap[m.p1Name] = (playerMap[m.p1Name] || 0) + m.p1Score;
+                playerMap[m.p2Name] = (playerMap[m.p2Name] || 0) + m.p2Score;
+                winsMap[m.p1Name] = winsMap[m.p1Name] || 0;
+                winsMap[m.p2Name] = winsMap[m.p2Name] || 0;
+                matchesMap[m.p1Name] = (matchesMap[m.p1Name] || 0) + 1;
+                matchesMap[m.p2Name] = (matchesMap[m.p2Name] || 0) + 1;
+
+                if (m.p1Score > m.p2Score) winsMap[m.p1Name]++;
+                if (m.p2Score > m.p1Score) winsMap[m.p2Name]++;
+            });
+
+            return Object.keys(playerMap).map(name => ({
+                name,
+                goals: playerMap[name],
+                wins: winsMap[name] || 0,
+                matchesPlayed: matchesMap[name] || 0
+            })).sort((a, b) => b.goals - a.goals);
+        }
+
+        function rectanglesOverlap(a, b) {
+            return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+        }
+
+        function startFlagContentCollisionWatcher() {
+            const flags = Array.from(document.querySelectorAll('.cup-flag'));
+            if (!flags.length) return;
+
+            function updateFlagVisibility() {
+                const contentElements = Array.from(document.querySelectorAll(`
+                    .dashboard-view:not(.hidden) > h3,
+                    .dashboard-view:not(.hidden) > div,
+                    .dashboard-view:not(.hidden) table,
+                    .dashboard-view:not(.hidden) form,
+                    .dashboard-view:not(.hidden) select,
+                    .dashboard-view:not(.hidden) button
+                `));
+                const contentRects = contentElements
+                    .filter(element => element.offsetParent !== null)
+                    .map(element => element.getBoundingClientRect());
+
+                flags.forEach(flag => {
+                    const flagRect = flag.getBoundingClientRect();
+                    const isOverContent = contentRects.some(contentRect => rectanglesOverlap(flagRect, contentRect));
+                    flag.classList.toggle('flag-hidden-over-content', isOverContent);
+                });
+
+                requestAnimationFrame(updateFlagVisibility);
+            }
+
+            requestAnimationFrame(updateFlagVisibility);
+        }
+
+        function showTopScorerIntro() {
+            if (topScorerIntroShown) return;
+
+            const topScorer = getLeaderboardStats()[0];
+            if (!topScorer) return;
+
+            topScorerIntroShown = true;
+            document.getElementById('intro-top-scorer-name').innerText = topScorer.name;
+            document.getElementById('intro-top-scorer-goals').innerText = `${topScorer.goals} Goals`;
+            const intro = document.getElementById('top-scorer-intro');
+            intro.classList.remove('hidden');
+
+            window.setTimeout(() => {
+                intro.classList.add('hidden');
+            }, 5000);
         }
 
         function openLoginModal() {
@@ -458,7 +946,7 @@
                 isAdminLoggedIn = true;
 
                 document.getElementById('btn-show-login').classList.add('hidden');
-                document.getElementById('btn-admin-logout').classList.remove('hidden');
+                // document.getElementById('btn-admin-logout').classList.remove('hidden');
                 setAdminButtonState('nav-entry-btn', '📝 Match Entry & Edit', '🔒 Match Entry & Edit', true);
                 setAdminButtonState('nav-tournament-setup-btn', '🏆 Tournament Setup', '🔒 Tournament Setup', true);
                 setAdminButtonState('nav-archive-btn', '📦 Audit Log (Archive)', '🔒 Audit Log (Archive)', true);
@@ -674,29 +1162,37 @@
                     localStorage.setItem('goal_tracker_tournament_participants', JSON.stringify(tournamentParticipants));
                     localStorage.setItem('goal_tracker_tournament_matches', JSON.stringify(tournamentMatches));
                 } else if (cachedTournaments.length || cachedParticipants.length || cachedMatches.length) {
-                    saveTournamentLocalData();
+                    await saveTournamentLocalData();
                 }
             } catch (error) {
                 console.error("Tournament database unavailable. Using local tournament cache.", error);
             }
         }
 
-        function saveTournamentLocalData() {
+        async function saveTournamentLocalData(options = {}) {
+            const { throwOnError = false } = options;
             localStorage.setItem('goal_tracker_tournaments', JSON.stringify(tournaments));
             localStorage.setItem('goal_tracker_tournament_participants', JSON.stringify(tournamentParticipants));
             localStorage.setItem('goal_tracker_tournament_matches', JSON.stringify(tournamentMatches));
 
-            fetch(`${API_BASE_URL}/api/tournament-data`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tournaments,
-                    participants: tournamentParticipants,
-                    matches: tournamentMatches
-                })
-            }).catch(error => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/tournament-data`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tournaments,
+                        participants: tournamentParticipants,
+                        matches: tournamentMatches
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Tournament database save failed');
+                }
+            } catch (error) {
                 console.error("Tournament database save failed. Local cache was still updated.", error);
-            });
+                if (throwOnError) throw error;
+            }
         }
 
         function getSelectedTournamentId(selectId) {
@@ -736,7 +1232,7 @@
             alert("Tournament created.");
         }
 
-        function deleteTournament(tournamentId) {
+        async function deleteTournament(tournamentId) {
             if (!isAdminLoggedIn) return;
 
             const tournament = tournaments.find(t => t.id === tournamentId);
@@ -746,6 +1242,10 @@
             const fixtureCount = tournamentMatches.filter(m => m.tournamentId === tournamentId).length;
             const confirmed = confirm(`Delete "${tournament.name}"?\n\nThis will remove ${participantCount} participant(s) and ${fixtureCount} fixture/result record(s).`);
             if (!confirmed) return;
+
+            const previousTournaments = [...tournaments];
+            const previousParticipants = [...tournamentParticipants];
+            const previousMatches = [...tournamentMatches];
 
             tournaments = tournaments.filter(t => t.id !== tournamentId);
             tournamentParticipants = tournamentParticipants.filter(p => p.tournamentId !== tournamentId);
@@ -759,9 +1259,21 @@
             });
             localStorage.setItem('goal_tracker_archive', JSON.stringify(archive));
 
-            saveTournamentLocalData();
-            renderAllDashboards();
-            alert("Tournament deleted.");
+            try {
+                await saveTournamentLocalData({ throwOnError: true });
+                renderAllDashboards();
+                alert("Tournament deleted.");
+            } catch (error) {
+                tournaments = previousTournaments;
+                tournamentParticipants = previousParticipants;
+                tournamentMatches = previousMatches;
+                localStorage.setItem('goal_tracker_tournaments', JSON.stringify(tournaments));
+                localStorage.setItem('goal_tracker_tournament_participants', JSON.stringify(tournamentParticipants));
+                localStorage.setItem('goal_tracker_tournament_matches', JSON.stringify(tournamentMatches));
+                renderAllDashboards();
+                console.error("Tournament delete failed:", error);
+                alert("Tournament delete failed in database. Please check the backend connection and try again.");
+            }
         }
 
         function addTournamentParticipant(event) {
@@ -823,7 +1335,6 @@
             alert("Fixtures generated.");
         }
 
-        // Round robin creates every unique participant pairing once.
         function generateRoundRobinFixtures(tournamentId, participants) {
             for (let i = 0; i < participants.length; i++) {
                 for (let j = i + 1; j < participants.length; j++) {
@@ -844,7 +1355,6 @@
             }
         }
 
-        // Knockout pairs participants per round and advances BYE participants automatically.
         function generateKnockoutFixtures(tournamentId, participants, roundNo) {
             const queued = [...participants];
             for (let i = 0; i < queued.length; i += 2) {
@@ -1151,23 +1661,7 @@
         }
 
         function renderLeaderboard() {
-            let playerMap = {};
-            let winsMap = {};
-            matches.forEach(m => {
-                playerMap[m.p1Name] = (playerMap[m.p1Name] || 0) + m.p1Score;
-                playerMap[m.p2Name] = (playerMap[m.p2Name] || 0) + m.p2Score;
-                winsMap[m.p1Name] = winsMap[m.p1Name] || 0;
-                winsMap[m.p2Name] = winsMap[m.p2Name] || 0;
-
-                if (m.p1Score > m.p2Score) winsMap[m.p1Name]++;
-                if (m.p2Score > m.p1Score) winsMap[m.p2Name]++;
-            });
-
-            let sortedPlayers = Object.keys(playerMap).map(name => ({
-                name,
-                goals: playerMap[name],
-                wins: winsMap[name] || 0
-            })).sort((a, b) => b.goals - a.goals);
+            let sortedPlayers = getLeaderboardStats();
 
             document.getElementById('top-player').innerText = sortedPlayers[0] ? `${sortedPlayers[0].name} (${sortedPlayers[0].goals} Goals)` : "None";
             document.getElementById('second-player').innerText = sortedPlayers[1] ? `${sortedPlayers[1].name} (${sortedPlayers[1].goals} Goals)` : "None";
@@ -1175,24 +1669,126 @@
 
             const container = document.getElementById('leaderboard-list');
             container.innerHTML = sortedPlayers.map((p, idx) => {
-                const matchesPlayed = matches.filter(m => m.p1Name === p.name || m.p2Name === p.name).length;
-                const activityBadge = matchesPlayed >= 2 ? '<span class="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-0.5 rounded">🔥 High Activity</span>' : '<span class="bg-gray-100 text-gray-800 text-xs font-bold px-2.5 py-0.5 rounded">💤 Inactive</span>';
+                const matchesPlayed = p.matchesPlayed;
+                const goalsPerMatch = matchesPlayed ? (p.goals / matchesPlayed).toFixed(2) : '0.00';
+                const winPercentage = matchesPlayed ? ((p.wins / matchesPlayed) * 100).toFixed(1) : '0.0';
+                const activityBadge = matchesPlayed >= 2 ? '<span class="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-0.5 rounded">🔥 Active</span>' : '<span class="bg-gray-100 text-gray-800 text-xs font-bold px-2.5 py-0.5 rounded">💤 Inactive</span>';
 
                 return `
                     <tr class="border-b">
                         <td class="p-3 font-bold">${idx + 1}</td>
                         <td class="p-3 font-semibold text-gray-700">${escapeHtml(p.name)}</td>
                         <td class="p-3">${activityBadge}</td>
+                        <td class="p-3 text-right font-black text-gray-700 font-mono">${matchesPlayed}</td>
                         <td class="p-3 text-right font-black text-green-600 font-mono">${p.wins}</td>
+                        <td class="p-3 text-right font-black text-purple-600 font-mono">${winPercentage}%</td>
                         <td class="p-3 text-right font-black text-blue-600 font-mono">${p.goals}</td>
+                        <td class="p-3 text-right font-black text-indigo-600 font-mono">${goalsPerMatch}</td>
                     </tr>
                 `;
             }).join('');
         }
 
+        function getAllPlayerNames() {
+            return [...new Set(matches.flatMap(m => [m.p1Name, m.p2Name]).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        }
+
+        function populateHistoryPlayerFilters() {
+            const playerOneSelect = document.getElementById('history-filter-player-one');
+            const playerTwoSelect = document.getElementById('history-filter-player-two');
+            if (!playerOneSelect || !playerTwoSelect) return;
+
+            const previousPlayerOne = playerOneSelect.value;
+            const previousPlayerTwo = playerTwoSelect.value;
+            const options = ['<option value="">Select player</option>', ...getAllPlayerNames().map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`)].join('');
+
+            playerOneSelect.innerHTML = options;
+            playerTwoSelect.innerHTML = options;
+            playerOneSelect.value = previousPlayerOne;
+            playerTwoSelect.value = previousPlayerTwo;
+        }
+
+        function getFilteredHistoryMatches(playerOne, playerTwo) {
+            if (!playerOne || !playerTwo) return matches;
+            return matches.filter(m =>
+                (m.p1Name === playerOne && m.p2Name === playerTwo) ||
+                (m.p1Name === playerTwo && m.p2Name === playerOne)
+            );
+        }
+
+        function getHeadToHeadStats(filteredMatches, playerOne, playerTwo) {
+            const stats = {
+                total: filteredMatches.length,
+                playerOneWins: 0,
+                playerTwoWins: 0,
+                draws: 0
+            };
+
+            filteredMatches.forEach(m => {
+                if (m.p1Score === m.p2Score) {
+                    stats.draws++;
+                    return;
+                }
+
+                const winner = m.p1Score > m.p2Score ? m.p1Name : m.p2Name;
+                if (winner === playerOne) stats.playerOneWins++;
+                if (winner === playerTwo) stats.playerTwoWins++;
+            });
+
+            return stats;
+        }
+
+        function renderHistoryFilterSummary(filteredMatches, playerOne, playerTwo) {
+            const summary = document.getElementById('history-filter-summary');
+            if (!summary) return;
+
+            if (!playerOne || !playerTwo) {
+                summary.innerHTML = `
+                    <div class="md:col-span-4 bg-gray-50 border rounded p-3 text-sm text-gray-600">
+                        Select two players to see their head-to-head matches and wins.
+                    </div>
+                `;
+                return;
+            }
+
+            const stats = getHeadToHeadStats(filteredMatches, playerOne, playerTwo);
+            summary.innerHTML = `
+                <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                    <p class="text-xs text-blue-700 font-bold uppercase">Matches Played</p>
+                    <p class="text-2xl font-black text-blue-900">${stats.total}</p>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded p-3">
+                    <p class="text-xs text-green-700 font-bold uppercase">${escapeHtml(playerOne)} Wins</p>
+                    <p class="text-2xl font-black text-green-900">${stats.playerOneWins}</p>
+                </div>
+                <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
+                    <p class="text-xs text-yellow-700 font-bold uppercase">${escapeHtml(playerTwo)} Wins</p>
+                    <p class="text-2xl font-black text-yellow-900">${stats.playerTwoWins}</p>
+                </div>
+                <div class="bg-gray-50 border border-gray-300 rounded p-3">
+                    <p class="text-xs text-gray-700 font-bold uppercase">Draws</p>
+                    <p class="text-2xl font-black text-gray-900">${stats.draws}</p>
+                </div>
+            `;
+        }
+
+        function clearHistoryFilter() {
+            const playerOneSelect = document.getElementById('history-filter-player-one');
+            const playerTwoSelect = document.getElementById('history-filter-player-two');
+            if (playerOneSelect) playerOneSelect.value = '';
+            if (playerTwoSelect) playerTwoSelect.value = '';
+            renderHistory();
+        }
+
         function renderHistory() {
+            populateHistoryPlayerFilters();
+            const playerOne = document.getElementById('history-filter-player-one')?.value || '';
+            const playerTwo = document.getElementById('history-filter-player-two')?.value || '';
+            const filteredMatches = getFilteredHistoryMatches(playerOne, playerTwo);
+            renderHistoryFilterSummary(filteredMatches, playerOne, playerTwo);
+
             const container = document.getElementById('history-list');
-            container.innerHTML = matches.map(m => {
+            container.innerHTML = filteredMatches.length ? filteredMatches.map(m => {
                 let outcome = "Draw / Tie";
                 if (m.p1Score > m.p2Score) outcome = `<span class="text-green-600 font-bold">${escapeHtml(m.p1Name)} Wins</span>`;
                 if (m.p2Score > m.p1Score) outcome = `<span class="text-green-600 font-bold">${escapeHtml(m.p2Name)} Wins</span>`;
@@ -1205,7 +1801,7 @@
                         <td class="p-3 text-center">${outcome}</td>
                     </tr>
                 `;
-            }).join('');
+            }).join('') : '<tr><td colspan="5" class="p-4 text-center text-gray-400 text-sm">No matches found for this filter.</td></tr>';
         }
 
         function renderAdminMatches() {
