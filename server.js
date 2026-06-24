@@ -5,6 +5,7 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 app.use(express.json()); 
+app.use(express.static(__dirname));
 
 const pool = new Pool({
     user: 'postgres',          
@@ -47,6 +48,15 @@ async function ensureTournamentTables() {
             is_bye BOOLEAN NOT NULL DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS archive_logs (
+            id SERIAL PRIMARY KEY,
+            timestamp_text TEXT NOT NULL,
+            match_ref TEXT NOT NULL,
+            changes_record TEXT NOT NULL,
+            cause TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
 }
@@ -246,6 +256,37 @@ app.put('/api/tournament-data', async (req, res) => {
     }
 });
 
+app.delete('/api/tournaments/:id', async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const { id } = req.params;
+
+        await client.query('BEGIN');
+        await client.query('DELETE FROM tournament_matches WHERE tournament_id = $1;', [id]);
+        await client.query('DELETE FROM tournament_participants WHERE tournament_id = $1;', [id]);
+
+        const result = await client.query(
+            'DELETE FROM tournaments WHERE id = $1 RETURNING id;',
+            [id]
+        );
+
+        if (result.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Tournament not found.' });
+        }
+
+        await client.query('COMMIT');
+        res.json({ message: 'Tournament deleted from database.' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("DELETE Tournament Error:", err.message);
+        res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
 
 app.get('/api/leaderboard', async (req, res) => {
     try {
@@ -254,6 +295,54 @@ app.get('/api/leaderboard', async (req, res) => {
     } catch (err) {
         console.error("GET Leaderboard Error:", err.message);
         res.status(500).send('Server Error');
+    }
+});
+
+app.get('/api/archive', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT
+                id,
+                timestamp_text AS "timestamp",
+                match_ref AS "matchRef",
+                changes_record AS "changes",
+                cause,
+                created_at AS "createdAt"
+            FROM archive_logs
+            ORDER BY id ASC;
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("GET Archive Error:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/archive', async (req, res) => {
+    try {
+        const { timestamp, matchRef, changes, cause } = req.body;
+
+        if (!timestamp || !matchRef || !changes || !cause) {
+            return res.status(400).json({ error: 'timestamp, matchRef, changes, and cause are required.' });
+        }
+
+        const result = await pool.query(
+            `INSERT INTO archive_logs (timestamp_text, match_ref, changes_record, cause)
+             VALUES ($1, $2, $3, $4)
+             RETURNING
+                id,
+                timestamp_text AS "timestamp",
+                match_ref AS "matchRef",
+                changes_record AS "changes",
+                cause,
+                created_at AS "createdAt";`,
+            [timestamp, matchRef, changes, cause]
+        );
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("POST Archive Error:", err.message);
+        res.status(500).json({ error: err.message });
     }
 });
 

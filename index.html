@@ -364,6 +364,92 @@
                 top: 6px;
             }
         }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            min-height: 100dvh;
+        }
+
+        .app-header {
+            min-height: 64px;
+        }
+
+        .app-shell {
+            height: calc(100dvh - 64px);
+        }
+
+        .app-nav {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(148, 163, 184, .75) transparent;
+        }
+
+        .app-main {
+            scroll-behavior: smooth;
+            scrollbar-gutter: stable;
+        }
+
+        .dashboard-view {
+            width: min(100%, 1440px);
+            margin-inline: auto;
+        }
+
+        .table-scroll {
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(100, 116, 139, .7) rgba(241, 245, 249, .8);
+        }
+
+        .table-scroll table {
+            min-width: 760px;
+        }
+
+        .table-scroll thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table-scroll th {
+            background: #f3f4f6;
+        }
+
+        .panel-scroll {
+            max-height: min(68vh, calc(100dvh - 15rem));
+        }
+
+        @media (max-width: 767px) {
+            .app-header {
+                min-height: 56px;
+            }
+
+            .app-shell {
+                height: calc(100dvh - 56px);
+            }
+
+            .app-nav {
+                position: sticky;
+                top: 0;
+                z-index: 30;
+            }
+
+            .table-scroll {
+                margin-inline: -0.25rem;
+                border-radius: 0.5rem;
+            }
+
+            .table-scroll table {
+                min-width: 680px;
+            }
+
+            .panel-scroll {
+                max-height: min(70vh, calc(100dvh - 12rem));
+            }
+        }
     </style>
 </head>
 <body class="bg-emerald-950 font-sans min-h-screen flex flex-col relative overflow-hidden">
@@ -392,16 +478,30 @@
         <div class="football-fly absolute left-0 text-4xl">⚽</div>
         <div class="football-fly absolute left-0 text-3xl">⚽</div>
         <div class="intro-card min-h-screen flex items-center justify-center px-4">
-            <div class="text-center">
+            <div class="grid w-full max-w-7xl grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 text-center">
+                <div class="rounded-lg border border-yellow-300/30 bg-white/10 p-6 md:p-8 shadow-2xl backdrop-blur-sm">
                 <div class="football-bounce text-6xl mb-5">⚽</div>
                 <p class="text-sm uppercase tracking-widest text-yellow-300 font-black">Current Top Scorer</p>
                 <h1 id="intro-top-scorer-name" class="mt-3 text-4xl md:text-6xl font-black leading-tight"></h1>
                 <p id="intro-top-scorer-goals" class="mt-3 text-xl md:text-2xl text-gray-200 font-bold"></p>
+                </div>
+                <div class="rounded-lg border border-emerald-300/30 bg-white/10 p-6 md:p-8 shadow-2xl backdrop-blur-sm">
+                    <div class="football-bounce text-6xl mb-5">&#127942;</div>
+                    <p class="text-sm uppercase tracking-widest text-emerald-300 font-black">Highest Win %</p>
+                    <h1 id="intro-top-win-name" class="mt-3 text-4xl md:text-6xl font-black leading-tight"></h1>
+                    <p id="intro-top-win-rate" class="mt-3 text-xl md:text-2xl text-gray-200 font-bold"></p>
+                </div>
+                <div class="rounded-lg border border-blue-300/30 bg-white/10 p-6 md:p-8 shadow-2xl backdrop-blur-sm">
+                    <div class="football-bounce text-6xl mb-5">&#11088;</div>
+                    <p class="text-sm uppercase tracking-widest text-blue-300 font-black">Top Winner</p>
+                    <h1 id="intro-top-winner-name" class="mt-3 text-4xl md:text-6xl font-black leading-tight"></h1>
+                    <p id="intro-top-winner-wins" class="mt-3 text-xl md:text-2xl text-gray-200 font-bold"></p>
+                </div>
             </div>
         </div>
     </div>
 
-    <header class="bg-gray-900 text-white p-4 shadow-md sticky top-0 z-40 flex justify-between items-center">
+    <header class="app-header bg-gray-900 text-white px-4 py-3 md:px-6 shadow-md sticky top-0 z-40 flex justify-between items-center gap-4">
         <div class="flex items-center space-x-2">
             <span class="text-xl font-extrabold tracking-tight">🏆 GoalTracker Dashboard</span>
         </div>
@@ -410,25 +510,24 @@
             <button id="btn-show-login" onclick="openLoginModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded text-sm transition">
                 Login
             </button>
-            </button>
         </div>
     </header>
 
-    <div class="relative z-10 flex flex-1 flex-col md:flex-row min-h-0">
+    <div class="app-shell relative z-10 flex flex-1 flex-col md:flex-row min-h-0">
 
-        <nav class="bg-gray-800 text-white w-full md:w-64 space-y-2 px-2 py-4 flex flex-row md:flex-col justify-start overflow-x-auto md:overflow-x-visible">
+        <nav class="app-nav bg-gray-800 text-white w-full md:w-64 gap-2 md:space-y-2 px-3 py-3 md:px-2 md:py-4 flex flex-row md:flex-col justify-start overflow-x-auto md:overflow-x-visible shrink-0">
             <p class="hidden md:block text-xs uppercase font-bold text-gray-400 px-4 pt-2">Public Views</p>
             <button onclick="switchView('leaderboard-panel', this)" class="view-btn flex-shrink-0 text-left block py-2 px-4 rounded bg-gray-700 text-white font-medium text-sm">📊 Leaderboard</button>
             <button onclick="switchView('history-panel', this)" class="view-btn flex-shrink-0 text-left block py-2 px-4 rounded hover:bg-gray-700 text-gray-300 font-medium text-sm">📅 Match History</button>
             <button onclick="switchView('tournament-panel', this)" class="view-btn flex-shrink-0 text-left block py-2 px-4 rounded hover:bg-gray-700 text-gray-300 font-medium text-sm">🏆 Tournament</button>
 
-            <p class="hidden md:block text-xs uppercase font-bold text-gray-400 px-4 pt-6">Admin Controls</p>
-            <button id="nav-entry-btn" onclick="switchView('admin-panel', this)" class="view-btn flex-shrink-0 text-left block py-2 px-4 rounded text-gray-500 font-medium text-sm cursor-not-allowed" disabled>🔒 Match Entry & Edit</button>
-            <button id="nav-tournament-setup-btn" onclick="switchView('tournament-admin-panel', this)" class="view-btn flex-shrink-0 text-left block py-2 px-4 rounded text-gray-500 font-medium text-sm cursor-not-allowed" disabled>🔒 Tournament Setup</button>
-            <button id="nav-archive-btn" onclick="switchView('archive-panel', this)" class="view-btn flex-shrink-0 text-left block py-2 px-4 rounded text-gray-500 font-medium text-sm cursor-not-allowed" disabled>🔒 Audit Log (Archive)</button>
+            <p id="admin-controls-label" class="hidden text-xs uppercase font-bold text-gray-400 px-4 pt-6">Admin Controls</p>
+            <button id="nav-entry-btn" onclick="switchView('admin-panel', this)" class="view-btn hidden flex-shrink-0 text-left py-2 px-4 rounded text-gray-500 font-medium text-sm cursor-not-allowed" disabled>🔒 Match Entry & Edit</button>
+            <button id="nav-tournament-setup-btn" onclick="switchView('tournament-admin-panel', this)" class="view-btn hidden flex-shrink-0 text-left py-2 px-4 rounded text-gray-500 font-medium text-sm cursor-not-allowed" disabled>🔒 Tournament Setup</button>
+            <button id="nav-archive-btn" onclick="switchView('archive-panel', this)" class="view-btn hidden flex-shrink-0 text-left py-2 px-4 rounded text-gray-500 font-medium text-sm cursor-not-allowed" disabled>🔒 Audit Log (Archive)</button>
         </nav>
 
-        <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+        <main class="app-main flex-1 min-w-0 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-y-auto">
 
             <section id="leaderboard-panel" class="dashboard-view space-y-6">
                 <h3 class="text-2xl font-bold text-gray-800">Leaderboard</h3>
@@ -437,23 +536,17 @@
                         <p class="text-sm text-blue-800 font-bold uppercase">📅 Total Matches</p>
                         <p id="total-matches-count" class="text-2xl font-black text-blue-900">0</p>
                     </div>
-                    <div class="bg-yellow-100 border border-yellow-300 p-4 rounded-lg">
-                        <p class="text-sm text-yellow-800 font-bold uppercase">🥇 Top Scorer</p>
-                        <p id="top-player" class="text-2xl font-black text-yellow-900">-</p>
-                    </div>
-                    <div class="bg-gray-200 border border-gray-300 p-4 rounded-lg">
-                        <p class="text-sm text-gray-700 font-bold uppercase">🥈 Second Top</p>
-                        <p id="second-player" class="text-2xl font-black text-gray-800">-</p>
+                    <div class="bg-green-100 border border-green-300 p-4 rounded-lg">
+                        <p class="text-sm text-green-800 font-bold uppercase">Total Goals</p>
+                        <p id="total-goals-count" class="text-2xl font-black text-green-900">0</p>
                     </div>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm border overflow-x-auto">
+                <div class="table-scroll panel-scroll bg-white p-3 sm:p-4 rounded-lg shadow-sm border">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-100 text-gray-700 text-sm uppercase">
                                 <th class="p-3 border">Rank</th>
                                 <th class="p-3 border">Player</th>
-                                <th class="p-3 border">Activity Status</th>
-                                
                                 <th class="p-3 border text-right">Total Matches</th>
                                 <th class="p-3 border text-right">Total Wins</th>
                                 <th class="p-3 border text-right">Win %</th>
@@ -482,11 +575,11 @@
                             Clear Filter
                         </button>
                     </div>
-                    <div id="history-filter-summary" class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3"></div>
+                    <div id="history-filter-summary" class="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3"></div>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm border overflow-x-auto">
+                <div class="table-scroll bg-white p-3 sm:p-4 rounded-lg shadow-sm border">
                     <table class="w-full text-left border-collapse">
-                        <thead>
+                        <thead class="sticky top-0 z-10">
                             <tr class="bg-gray-100 text-gray-700 text-sm uppercase">
                                 <th class="p-3 border">Date</th>
                                 <th class="p-3 border">Player 1</th>
@@ -532,7 +625,7 @@
                     <p id="tournament-champion-name" class="text-2xl font-black text-yellow-900"></p>
                 </div>
 
-                <div class="bg-white p-4 rounded-lg shadow-sm border overflow-x-auto">
+                <div class="table-scroll panel-scroll bg-white p-3 sm:p-4 rounded-lg shadow-sm border">
                     <h4 class="text-lg font-bold text-gray-800 mb-3">Points Table</h4>
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -553,7 +646,7 @@
                     </table>
                 </div>
 
-                <div class="bg-white p-4 rounded-lg shadow-sm border overflow-x-auto">
+                <div class="table-scroll panel-scroll bg-white p-3 sm:p-4 rounded-lg shadow-sm border">
                     <h4 class="text-lg font-bold text-gray-800 mb-3">Fixtures & Results</h4>
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -602,7 +695,7 @@
 
                 <div class="bg-white p-6 rounded-lg shadow-sm border">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">Manage & Edit Matches <span class="text-xs text-red-500 font-normal">(Deletions are disabled)</span></h3>
-                    <div class="overflow-x-auto">
+                    <div class="table-scroll panel-scroll">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-gray-100 text-gray-700 text-sm uppercase">
@@ -670,7 +763,7 @@
 
                 <div class="bg-white p-6 rounded-lg shadow-sm border">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">Manage Tournaments</h3>
-                    <div class="overflow-x-auto">
+                    <div class="table-scroll panel-scroll">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-gray-100 text-gray-700 text-xs uppercase">
@@ -706,7 +799,7 @@
                             <select id="result-tournament-select" onchange="renderTournamentAdmin()" class="w-full p-2 border rounded bg-white"></select>
                         </div>
                     </div>
-                    <div class="overflow-x-auto">
+                    <div class="table-scroll panel-scroll">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-gray-100 text-gray-700 text-xs uppercase">
@@ -725,7 +818,7 @@
 
             <section id="archive-panel" class="dashboard-view hidden space-y-6">
                 <h3 class="text-2xl font-bold text-gray-800">System Data Modification Logs</h3>
-                <div class="bg-white p-6 rounded-lg shadow-sm border overflow-x-auto">
+                <div class="table-scroll panel-scroll bg-white p-3 sm:p-6 rounded-lg shadow-sm border">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-100 text-gray-700 text-sm uppercase">
@@ -806,12 +899,25 @@
         let selectedMatchForEdit = null;
         let isAdminLoggedIn = false;
         let topScorerIntroShown = false;
-        const API_BASE_URL = window.GOAL_TRACKER_API_BASE_URL || (window.location.protocol === 'file:' ? 'http://localhost:5000' : window.location.origin);
+        function getApiBaseUrl() {
+            if (window.GOAL_TRACKER_API_BASE_URL) return window.GOAL_TRACKER_API_BASE_URL;
+            if (window.location.protocol === 'file:') return 'http://localhost:5000';
+
+            const staticPreviewPorts = ['5500', '5501', '3000'];
+            if (staticPreviewPorts.includes(window.location.port)) {
+                return `${window.location.protocol}//${window.location.hostname}:5000`;
+            }
+
+            return window.location.origin;
+        }
+
+        const API_BASE_URL = getApiBaseUrl();
 
         window.onload = async function() {
             if (localStorage.getItem('goal_tracker_archive')) {
                 archive = JSON.parse(localStorage.getItem('goal_tracker_archive'));
             }
+            await loadArchiveData();
             await loadTournamentLocalData();
             await fetchMatchesFromDB();
             renderAllDashboards();
@@ -837,6 +943,63 @@
             } catch (error) {
                 console.error("Database Failed to connect", error);
                 renderAllDashboards();
+            }
+        }
+
+        async function loadArchiveData() {
+            const cachedArchive = JSON.parse(localStorage.getItem('goal_tracker_archive') || '[]');
+            archive = cachedArchive;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/archive`);
+                if (!response.ok) throw new Error('Archive database fetch failed');
+
+                const databaseArchive = await response.json();
+                if (databaseArchive.length) {
+                    archive = databaseArchive;
+                    localStorage.setItem('goal_tracker_archive', JSON.stringify(archive));
+                    return;
+                }
+
+                if (cachedArchive.length) {
+                    for (const item of cachedArchive) {
+                        await saveArchiveLogToDatabase(item);
+                    }
+                    const refreshedResponse = await fetch(`${API_BASE_URL}/api/archive`);
+                    archive = refreshedResponse.ok ? await refreshedResponse.json() : cachedArchive;
+                    localStorage.setItem('goal_tracker_archive', JSON.stringify(archive));
+                }
+            } catch (error) {
+                console.error("Archive database unavailable. Using local archive cache.", error);
+            }
+        }
+
+        async function saveArchiveLogToDatabase(logItem) {
+            const response = await fetch(`${API_BASE_URL}/api/archive`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(logItem)
+            });
+
+            if (!response.ok) {
+                throw new Error('Archive database save failed');
+            }
+
+            return response.json();
+        }
+
+        async function addArchiveLog(logItem) {
+            archive.push(logItem);
+            localStorage.setItem('goal_tracker_archive', JSON.stringify(archive));
+            renderArchive();
+
+            try {
+                const savedLog = await saveArchiveLogToDatabase(logItem);
+                archive[archive.length - 1] = savedLog;
+                localStorage.setItem('goal_tracker_archive', JSON.stringify(archive));
+                renderArchive();
+            } catch (error) {
+                console.error("Archive database save failed. Local archive was still updated.", error);
             }
         }
 
@@ -901,12 +1064,42 @@
         function showTopScorerIntro() {
             if (topScorerIntroShown) return;
 
-            const topScorer = getLeaderboardStats()[0];
-            if (!topScorer) return;
+            const leaderboardStats = getLeaderboardStats();
+            const topScorer = leaderboardStats[0];
+            const topWinPercentagePlayer = leaderboardStats
+                .filter(player => player.matchesPlayed > 0)
+                .map(player => ({
+                    ...player,
+                    winPercentage: (player.wins / player.matchesPlayed) * 100
+                }))
+                .sort((a, b) =>
+                    b.winPercentage - a.winPercentage ||
+                    b.wins - a.wins ||
+                    b.matchesPlayed - a.matchesPlayed ||
+                    a.name.localeCompare(b.name)
+                )[0];
+            const topWinner = leaderboardStats
+                .filter(player => player.matchesPlayed > 0)
+                .map(player => ({
+                    ...player,
+                    winPercentage: (player.wins / player.matchesPlayed) * 100
+                }))
+                .sort((a, b) =>
+                    b.wins - a.wins ||
+                    b.winPercentage - a.winPercentage ||
+                    b.matchesPlayed - a.matchesPlayed ||
+                    a.name.localeCompare(b.name)
+                )[0];
+
+            if (!topScorer || !topWinPercentagePlayer || !topWinner) return;
 
             topScorerIntroShown = true;
             document.getElementById('intro-top-scorer-name').innerText = topScorer.name;
             document.getElementById('intro-top-scorer-goals').innerText = `${topScorer.goals} Goals`;
+            document.getElementById('intro-top-win-name').innerText = topWinPercentagePlayer.name;
+            document.getElementById('intro-top-win-rate').innerText = `${topWinPercentagePlayer.winPercentage.toFixed(1)}% Win Rate`;
+            document.getElementById('intro-top-winner-name').innerText = topWinner.name;
+            document.getElementById('intro-top-winner-wins').innerText = `${topWinner.wins} Wins`;
             const intro = document.getElementById('top-scorer-intro');
             intro.classList.remove('hidden');
 
@@ -929,11 +1122,25 @@
             const btn = document.getElementById(buttonId);
             if (!btn) return;
             btn.disabled = !unlocked;
+            btn.classList.toggle('hidden', !unlocked);
+            btn.classList.toggle('block', unlocked);
             btn.classList.toggle('text-gray-500', !unlocked);
             btn.classList.toggle('cursor-not-allowed', !unlocked);
             btn.classList.toggle('text-gray-300', unlocked);
             btn.classList.toggle('hover:bg-gray-700', unlocked);
             btn.innerText = unlocked ? unlockedText : lockedText;
+        }
+
+        function setAdminNavVisibility(isVisible) {
+            const adminLabel = document.getElementById('admin-controls-label');
+            if (adminLabel) {
+                adminLabel.classList.add('hidden');
+                adminLabel.classList.toggle('md:block', isVisible);
+            }
+
+            setAdminButtonState('nav-entry-btn', '📝 Match Entry & Edit', '🔒 Match Entry & Edit', isVisible);
+            setAdminButtonState('nav-tournament-setup-btn', '🏆 Tournament Setup', '🔒 Tournament Setup', isVisible);
+            setAdminButtonState('nav-archive-btn', '📦 Audit Log (Archive)', '🔒 Audit Log (Archive)', isVisible);
         }
 
         function handleLogin(e) {
@@ -947,9 +1154,7 @@
 
                 document.getElementById('btn-show-login').classList.add('hidden');
                 // document.getElementById('btn-admin-logout').classList.remove('hidden');
-                setAdminButtonState('nav-entry-btn', '📝 Match Entry & Edit', '🔒 Match Entry & Edit', true);
-                setAdminButtonState('nav-tournament-setup-btn', '🏆 Tournament Setup', '🔒 Tournament Setup', true);
-                setAdminButtonState('nav-archive-btn', '📦 Audit Log (Archive)', '🔒 Audit Log (Archive)', true);
+                setAdminNavVisibility(true);
 
                 closeLoginModal();
                 renderAllDashboards();
@@ -964,10 +1169,9 @@
             isAdminLoggedIn = false;
 
             document.getElementById('btn-show-login').classList.remove('hidden');
-            document.getElementById('btn-admin-logout').classList.add('hidden');
-            setAdminButtonState('nav-entry-btn', '📝 Match Entry & Edit', '🔒 Match Entry & Edit', false);
-            setAdminButtonState('nav-tournament-setup-btn', '🏆 Tournament Setup', '🔒 Tournament Setup', false);
-            setAdminButtonState('nav-archive-btn', '📦 Audit Log (Archive)', '🔒 Audit Log (Archive)', false);
+            const logoutButton = document.getElementById('btn-admin-logout');
+            if (logoutButton) logoutButton.classList.add('hidden');
+            setAdminNavVisibility(false);
 
             switchView('leaderboard-panel');
             alert("Admin session terminated.");
@@ -1099,13 +1303,12 @@
 
                 if (response.ok) {
                     if (scoreChanged) {
-                        archive.push({
+                        await addArchiveLog({
                             timestamp: new Date().toLocaleString(),
                             matchRef: `${original.date}: ${original.p1Name} vs ${original.p2Name}`,
                             changes: `Scores changed from [${original.p1Score}-${original.p2Score}] to [${p1S}-${p2S}]`,
                             cause: reason
                         });
-                        localStorage.setItem('goal_tracker_archive', JSON.stringify(archive));
                     }
 
                     closeModal();
@@ -1152,18 +1355,12 @@
                 if (!response.ok) throw new Error('Tournament database fetch failed');
 
                 const data = await response.json();
-                const databaseHasTournamentData = data.tournaments.length || data.participants.length || data.matches.length;
-
-                if (databaseHasTournamentData) {
-                    tournaments = data.tournaments;
-                    tournamentParticipants = data.participants;
-                    tournamentMatches = data.matches;
-                    localStorage.setItem('goal_tracker_tournaments', JSON.stringify(tournaments));
-                    localStorage.setItem('goal_tracker_tournament_participants', JSON.stringify(tournamentParticipants));
-                    localStorage.setItem('goal_tracker_tournament_matches', JSON.stringify(tournamentMatches));
-                } else if (cachedTournaments.length || cachedParticipants.length || cachedMatches.length) {
-                    await saveTournamentLocalData();
-                }
+                tournaments = data.tournaments;
+                tournamentParticipants = data.participants;
+                tournamentMatches = data.matches;
+                localStorage.setItem('goal_tracker_tournaments', JSON.stringify(tournaments));
+                localStorage.setItem('goal_tracker_tournament_participants', JSON.stringify(tournamentParticipants));
+                localStorage.setItem('goal_tracker_tournament_matches', JSON.stringify(tournamentMatches));
             } catch (error) {
                 console.error("Tournament database unavailable. Using local tournament cache.", error);
             }
@@ -1247,20 +1444,31 @@
             const previousParticipants = [...tournamentParticipants];
             const previousMatches = [...tournamentMatches];
 
-            tournaments = tournaments.filter(t => t.id !== tournamentId);
-            tournamentParticipants = tournamentParticipants.filter(p => p.tournamentId !== tournamentId);
-            tournamentMatches = tournamentMatches.filter(m => m.tournamentId !== tournamentId);
-
-            archive.push({
+            const deleteLog = {
                 timestamp: new Date().toLocaleString(),
                 matchRef: `Tournament: ${tournament.name}`,
                 changes: `Tournament deleted with ${participantCount} participant(s) and ${fixtureCount} fixture/result record(s)`,
                 cause: 'Admin deleted tournament'
-            });
-            localStorage.setItem('goal_tracker_archive', JSON.stringify(archive));
+            };
 
             try {
-                await saveTournamentLocalData({ throwOnError: true });
+                const response = await fetch(`${API_BASE_URL}/api/tournaments/${encodeURIComponent(tournamentId)}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Tournament database delete failed');
+                }
+
+                tournaments = tournaments.filter(t => t.id !== tournamentId);
+                tournamentParticipants = tournamentParticipants.filter(p => p.tournamentId !== tournamentId);
+                tournamentMatches = tournamentMatches.filter(m => m.tournamentId !== tournamentId);
+                localStorage.setItem('goal_tracker_tournaments', JSON.stringify(tournaments));
+                localStorage.setItem('goal_tracker_tournament_participants', JSON.stringify(tournamentParticipants));
+                localStorage.setItem('goal_tracker_tournament_matches', JSON.stringify(tournamentMatches));
+
+                await addArchiveLog(deleteLog);
                 renderAllDashboards();
                 alert("Tournament deleted.");
             } catch (error) {
@@ -1272,7 +1480,7 @@
                 localStorage.setItem('goal_tracker_tournament_matches', JSON.stringify(tournamentMatches));
                 renderAllDashboards();
                 console.error("Tournament delete failed:", error);
-                alert("Tournament delete failed in database. Please check the backend connection and try again.");
+                alert(`Tournament delete failed: ${error.message}`);
             }
         }
 
@@ -1377,7 +1585,7 @@
             handleKnockoutNextRound(tournamentId, roundNo);
         }
 
-        function enterTournamentResult(matchId) {
+        async function enterTournamentResult(matchId) {
             if (!isAdminLoggedIn) return;
 
             const match = tournamentMatches.find(m => m.id === matchId);
@@ -1410,13 +1618,12 @@
             if (completedScoreChanged) {
                 const p1Name = getParticipantName(match.p1Id);
                 const p2Name = getParticipantName(match.p2Id);
-                archive.push({
+                await addArchiveLog({
                     timestamp: new Date().toLocaleString(),
                     matchRef: `${tournament ? tournament.name : 'Tournament'} Round ${match.roundNo}: ${p1Name} vs ${p2Name}`,
                     changes: `Tournament score changed from [${match.p1Score}-${match.p2Score}] to [${p1Score}-${p2Score}]`,
                     cause: reason
                 });
-                localStorage.setItem('goal_tracker_archive', JSON.stringify(archive));
             }
 
             match.p1Score = p1Score;
@@ -1663,22 +1870,19 @@
         function renderLeaderboard() {
             let sortedPlayers = getLeaderboardStats();
 
-            document.getElementById('top-player').innerText = sortedPlayers[0] ? `${sortedPlayers[0].name} (${sortedPlayers[0].goals} Goals)` : "None";
-            document.getElementById('second-player').innerText = sortedPlayers[1] ? `${sortedPlayers[1].name} (${sortedPlayers[1].goals} Goals)` : "None";
             document.getElementById('total-matches-count').innerText = matches.length;
+            document.getElementById('total-goals-count').innerText = sortedPlayers.reduce((total, player) => total + player.goals, 0);
 
             const container = document.getElementById('leaderboard-list');
             container.innerHTML = sortedPlayers.map((p, idx) => {
                 const matchesPlayed = p.matchesPlayed;
                 const goalsPerMatch = matchesPlayed ? (p.goals / matchesPlayed).toFixed(2) : '0.00';
                 const winPercentage = matchesPlayed ? ((p.wins / matchesPlayed) * 100).toFixed(1) : '0.0';
-                const activityBadge = matchesPlayed >= 2 ? '<span class="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-0.5 rounded">🔥 Active</span>' : '<span class="bg-gray-100 text-gray-800 text-xs font-bold px-2.5 py-0.5 rounded">💤 Inactive</span>';
 
                 return `
                     <tr class="border-b">
                         <td class="p-3 font-bold">${idx + 1}</td>
                         <td class="p-3 font-semibold text-gray-700">${escapeHtml(p.name)}</td>
-                        <td class="p-3">${activityBadge}</td>
                         <td class="p-3 text-right font-black text-gray-700 font-mono">${matchesPlayed}</td>
                         <td class="p-3 text-right font-black text-green-600 font-mono">${p.wins}</td>
                         <td class="p-3 text-right font-black text-purple-600 font-mono">${winPercentage}%</td>
@@ -1721,10 +1925,20 @@
                 total: filteredMatches.length,
                 playerOneWins: 0,
                 playerTwoWins: 0,
-                draws: 0
+                draws: 0,
+                playerOneGoals: 0,
+                playerTwoGoals: 0
             };
 
             filteredMatches.forEach(m => {
+                if (m.p1Name === playerOne) {
+                    stats.playerOneGoals += Number(m.p1Score) || 0;
+                    stats.playerTwoGoals += Number(m.p2Score) || 0;
+                } else {
+                    stats.playerOneGoals += Number(m.p2Score) || 0;
+                    stats.playerTwoGoals += Number(m.p1Score) || 0;
+                }
+
                 if (m.p1Score === m.p2Score) {
                     stats.draws++;
                     return;
@@ -1744,27 +1958,59 @@
 
             if (!playerOne || !playerTwo) {
                 summary.innerHTML = `
-                    <div class="md:col-span-4 bg-gray-50 border rounded p-3 text-sm text-gray-600">
-                        Select two players to see their head-to-head matches and wins.
+                    <div class="sm:col-span-2 xl:col-span-4 bg-gray-50 border rounded p-3 text-sm text-gray-600">
+                        Select two players to see their head-to-head wins and total goals.
                     </div>
                 `;
                 return;
             }
 
             const stats = getHeadToHeadStats(filteredMatches, playerOne, playerTwo);
+            const playerOneWinPercentage = stats.total ? ((stats.playerOneWins / stats.total) * 100).toFixed(1) : '0.0';
+            const playerTwoWinPercentage = stats.total ? ((stats.playerTwoWins / stats.total) * 100).toFixed(1) : '0.0';
             summary.innerHTML = `
                 <div class="bg-blue-50 border border-blue-200 rounded p-3">
                     <p class="text-xs text-blue-700 font-bold uppercase">Matches Played</p>
                     <p class="text-2xl font-black text-blue-900">${stats.total}</p>
                 </div>
                 <div class="bg-green-50 border border-green-200 rounded p-3">
-                    <p class="text-xs text-green-700 font-bold uppercase">${escapeHtml(playerOne)} Wins</p>
-                    <p class="text-2xl font-black text-green-900">${stats.playerOneWins}</p>
+                    <p align="center" class="text-xl text-green-700 font-bold uppercase">${escapeHtml(playerOne)}</p>
+                    <div class="mt-2 grid grid-cols-3 gap-3">
+                        <div>
+                            <p align="left" class="text-[10px] text-green-700 font-bold uppercase">Wins</p>
+                            <p align="left" class="text-2l font-black text-green-900">${stats.playerOneWins}</p>
+                        </div>
+                    
+                        <div>
+                            <p align="center" class="text-[10px] text-green-700 font-bold uppercase">Goals</p>
+                            <p align="center" class="text-2l font-black text-green-900">${stats.playerOneGoals}</p>
+                        </div>
+
+                            <div>
+                            <p align="right" class="text-[10px] text-green-700 font-bold uppercase">Win %</p>
+                            <p align="right" class="text-2l font-black text-green-900">${playerOneWinPercentage}%</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
-                    <p class="text-xs text-yellow-700 font-bold uppercase">${escapeHtml(playerTwo)} Wins</p>
-                    <p class="text-2xl font-black text-yellow-900">${stats.playerTwoWins}</p>
+                <div align="center" class="bg-yellow-50 border border-yellow-200 rounded p-3">
+                    <p class="text-xl text-yellow-700 font-bold uppercase">${escapeHtml(playerTwo)}</p>
+                    <div class="mt-2 grid grid-cols-3 gap-3">
+                        <div>
+                            <p align="left" class="text-[10px] text-yellow-700 font-bold uppercase">Wins</p>
+                            <p align="left" class="text-2l font-black text-yellow-900">${stats.playerTwoWins}</p>
+                        </div>
+                       
+                        <div>
+                            <p align="center" class="text-[10px] text-yellow-700 font-bold uppercase">Goals</p>
+                            <p align="center" class="text-2l font-black text-yellow-900">${stats.playerTwoGoals}</p>
+                        </div>
+                         <div>
+                            <p align="right" class="text-[10px] text-yellow-700 font-bold uppercase">Win %</p>
+                            <p align="right" class="text-2l font-black text-yellow-900">${playerTwoWinPercentage}%</p>
+                        </div>
+                    </div>
                 </div>
+                
                 <div class="bg-gray-50 border border-gray-300 rounded p-3">
                     <p class="text-xs text-gray-700 font-bold uppercase">Draws</p>
                     <p class="text-2xl font-black text-gray-900">${stats.draws}</p>
