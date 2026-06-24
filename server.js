@@ -8,11 +8,10 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 const pool = new Pool({
-    user: 'postgres',          
-    host: 'localhost',
-    database: 'GoalTracker', 
-    password: 'iit123', 
-    port: 5432,
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 async function ensureTournamentTables() {
