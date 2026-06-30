@@ -1,21 +1,80 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
+require('dotenv').config({ quiet: true });
 
 const app = express();
 app.use(cors());
 app.use(express.json()); 
 app.use(express.static(__dirname));
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+function shouldUseDatabaseSsl(connectionString) {
+    if (process.env.DATABASE_SSL === 'true') return true;
+    if (process.env.DATABASE_SSL === 'false') return false;
+    if (!connectionString) return false;
+
+    return !/localhost|127\.0\.0\.1/i.test(connectionString);
+}
+
+function getDatabaseConfig() {
+    if (process.env.DATABASE_URL) {
+        return {
+            connectionString: process.env.DATABASE_URL,
+            ssl: shouldUseDatabaseSsl(process.env.DATABASE_URL)
+                ? { rejectUnauthorized: false }
+                : false,
+        };
+    }
+
+    return {
+        user: process.env.PGUSER || 'postgres',
+        host: process.env.PGHOST || 'localhost',
+        database: process.env.PGDATABASE || 'GoalTracker',
+        password: process.env.PGPASSWORD || 'iit123',
+        port: Number(process.env.PGPORT || 5432),
+        ssl: false,
+    };
+}
+
+const pool = new Pool(getDatabaseConfig());
+
+let databaseReadyPromise;
+
+function ensureDatabaseReady() {
+    if (!databaseReadyPromise) {
+        databaseReadyPromise = ensureTournamentTables().catch(err => {
+            databaseReadyPromise = null;
+            throw err;
+        });
+    }
+
+    return databaseReadyPromise;
+}
+
+app.use('/api', async (req, res, next) => {
+    try {
+        await ensureDatabaseReady();
+        next();
+    } catch (err) {
+        console.error('Failed to initialize tournament database tables:', err.message);
+        res.status(500).json({ error: 'Database initialization failed.' });
+    }
 });
 
 async function ensureTournamentTables() {
     await pool.query(`
+        DROP VIEW IF EXISTS view_match_history;
+        DROP VIEW IF EXISTS view_leaderboard;
+
+        CREATE TABLE IF NOT EXISTS matches (
+            match_id SERIAL PRIMARY KEY,
+            player1_name TEXT NOT NULL,
+            player1_score INTEGER NOT NULL,
+            player2_name TEXT NOT NULL,
+            player2_score INTEGER NOT NULL,
+            match_date DATE NOT NULL DEFAULT CURRENT_DATE
+        );
+
         CREATE TABLE IF NOT EXISTS tournaments (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -57,6 +116,40 @@ async function ensureTournamentTables() {
             cause TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE OR REPLACE VIEW view_match_history AS
+        SELECT
+            match_id,
+            player1_name,
+            player1_score,
+            player2_name,
+            player2_score,
+            match_date
+        FROM matches
+        ORDER BY match_date DESC, match_id DESC;
+
+        CREATE OR REPLACE VIEW view_leaderboard AS
+        SELECT
+            player_name,
+            SUM(goals) AS total_goals,
+            SUM(wins) AS total_wins,
+            COUNT(*) AS total_matches,
+            ROUND(AVG(goals)::numeric, 2) AS goals_per_match
+        FROM (
+            SELECT
+                player1_name AS player_name,
+                player1_score AS goals,
+                CASE WHEN player1_score > player2_score THEN 1 ELSE 0 END AS wins
+            FROM matches
+            UNION ALL
+            SELECT
+                player2_name AS player_name,
+                player2_score AS goals,
+                CASE WHEN player2_score > player1_score THEN 1 ELSE 0 END AS wins
+            FROM matches
+        ) player_rows
+        GROUP BY player_name
+        ORDER BY total_goals DESC, total_wins DESC, player_name ASC;
     `);
 }
 
@@ -70,7 +163,8 @@ app.get('/api/matches', async (req, res) => {
                 player2_name,
                 player2_score,
                 to_char(match_date, 'YYYY-MM-DD') AS match_date
-            FROM view_match_history;
+            FROM view_match_history
+            ORDER BY match_id DESC;
         `);
         res.json(result.rows);
     } catch (err) {
@@ -345,14 +439,18 @@ app.post('/api/archive', async (req, res) => {
     }
 });
 
-ensureTournamentTables()
-    .then(() => {
-        app.listen(5000, '0.0.0.0', () => {
-            console.log('Backend Server running on port 5000');
-            console.log('Tournament database tables are ready.');
+if (require.main === module) {
+    ensureDatabaseReady()
+        .then(() => {
+            app.listen(5000, '0.0.0.0', () => {
+                console.log('Backend Server running on port 5000');
+                console.log('Tournament database tables are ready.');
+            });
+        })
+        .catch(err => {
+            console.error('Failed to initialize tournament database tables:', err.message);
+            process.exit(1);
         });
-    })
-    .catch(err => {
-        console.error('Failed to initialize tournament database tables:', err.message);
-        process.exit(1);
-    });
+}
+
+module.exports = app;

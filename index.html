@@ -1920,6 +1920,17 @@
             );
         }
 
+        function getLifoMatches(matchList) {
+            return [...matchList].sort((a, b) => {
+                const aId = Number(a.id);
+                const bId = Number(b.id);
+                if (Number.isFinite(aId) && Number.isFinite(bId) && aId !== bId) {
+                    return bId - aId;
+                }
+                return String(b.id || '').localeCompare(String(a.id || ''));
+            });
+        }
+
         function getHeadToHeadStats(filteredMatches, playerOne, playerTwo) {
             const stats = {
                 total: filteredMatches.length,
@@ -2031,10 +2042,11 @@
             const playerOne = document.getElementById('history-filter-player-one')?.value || '';
             const playerTwo = document.getElementById('history-filter-player-two')?.value || '';
             const filteredMatches = getFilteredHistoryMatches(playerOne, playerTwo);
+            const historyMatches = getLifoMatches(filteredMatches);
             renderHistoryFilterSummary(filteredMatches, playerOne, playerTwo);
 
             const container = document.getElementById('history-list');
-            container.innerHTML = filteredMatches.length ? filteredMatches.map(m => {
+            container.innerHTML = historyMatches.length ? historyMatches.map(m => {
                 let outcome = "Draw / Tie";
                 if (m.p1Score > m.p2Score) outcome = `<span class="text-green-600 font-bold">${escapeHtml(m.p1Name)} Wins</span>`;
                 if (m.p2Score > m.p1Score) outcome = `<span class="text-green-600 font-bold">${escapeHtml(m.p2Name)} Wins</span>`;
