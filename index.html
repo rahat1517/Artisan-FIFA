@@ -551,6 +551,7 @@
                                 <th class="p-3 border text-right">Total Wins</th>
                                 <th class="p-3 border text-right">Win %</th>
                                 <th class="p-3 border text-right">Total Goals</th>
+                                <th class="p-3 border text-right">Goals Conceded</th>
                                 <th class="p-3 border text-right">G/M</th>
                             </tr>
                         </thead>
@@ -1005,12 +1006,15 @@
 
         function getLeaderboardStats() {
             const playerMap = {};
+            const concededMap = {};
             const winsMap = {};
             const matchesMap = {};
 
             matches.forEach(m => {
                 playerMap[m.p1Name] = (playerMap[m.p1Name] || 0) + m.p1Score;
                 playerMap[m.p2Name] = (playerMap[m.p2Name] || 0) + m.p2Score;
+                concededMap[m.p1Name] = (concededMap[m.p1Name] || 0) + m.p2Score;
+                concededMap[m.p2Name] = (concededMap[m.p2Name] || 0) + m.p1Score;
                 winsMap[m.p1Name] = winsMap[m.p1Name] || 0;
                 winsMap[m.p2Name] = winsMap[m.p2Name] || 0;
                 matchesMap[m.p1Name] = (matchesMap[m.p1Name] || 0) + 1;
@@ -1023,6 +1027,7 @@
             return Object.keys(playerMap).map(name => ({
                 name,
                 goals: playerMap[name],
+                conceded: concededMap[name] || 0,
                 wins: winsMap[name] || 0,
                 matchesPlayed: matchesMap[name] || 0
             })).sort((a, b) => b.goals - a.goals);
@@ -1364,6 +1369,11 @@
             } catch (error) {
                 console.error("Tournament database unavailable. Using local tournament cache.", error);
             }
+
+            refreshRoundRobinTournamentStatuses();
+            localStorage.setItem('goal_tracker_tournaments', JSON.stringify(tournaments));
+            localStorage.setItem('goal_tracker_tournament_participants', JSON.stringify(tournamentParticipants));
+            localStorage.setItem('goal_tracker_tournament_matches', JSON.stringify(tournamentMatches));
         }
 
         async function saveTournamentLocalData(options = {}) {
@@ -1492,6 +1502,12 @@
             const name = document.getElementById('participant-name').value.trim();
             if (!tournamentId || !name) return;
 
+            const fixtureExists = tournamentMatches.some(m => m.tournamentId === tournamentId);
+            if (fixtureExists) {
+                alert("Fixtures already exist for this tournament. Delete/regenerate fixtures before changing participants.");
+                return;
+            }
+
             const exists = tournamentParticipants.some(p => p.tournamentId === tournamentId && p.name.toLowerCase() === name.toLowerCase());
             if (exists) {
                 alert("This participant already exists in the selected tournament.");
@@ -1544,22 +1560,43 @@
         }
 
         function generateRoundRobinFixtures(tournamentId, participants) {
-            for (let i = 0; i < participants.length; i++) {
-                for (let j = i + 1; j < participants.length; j++) {
+            const scheduledPlayers = participants.map(p => ({ ...p, isBye: false }));
+            if (scheduledPlayers.length % 2 === 1) {
+                scheduledPlayers.push({ id: '', name: 'BYE', isBye: true });
+            }
+
+            const rounds = scheduledPlayers.length - 1;
+            const matchesPerRound = scheduledPlayers.length / 2;
+            const rotation = [...scheduledPlayers];
+            const now = Date.now();
+
+            for (let roundNo = 1; roundNo <= rounds; roundNo++) {
+                for (let matchIndex = 0; matchIndex < matchesPerRound; matchIndex++) {
+                    let p1 = rotation[matchIndex];
+                    let p2 = rotation[rotation.length - 1 - matchIndex];
+
+                    if (roundNo % 2 === 0) {
+                        [p1, p2] = [p2, p1];
+                    }
+
+                    const isBye = p1.isBye || p2.isBye;
+                    const activePlayer = p1.isBye ? p2 : p1;
                     tournamentMatches.push({
                         id: makeId('tm'),
                         tournamentId,
-                        roundNo: 1,
-                        p1Id: participants[i].id,
-                        p2Id: participants[j].id,
-                        p1Score: null,
-                        p2Score: null,
-                        winnerId: '',
-                        status: 'Pending',
-                        isBye: false,
-                        createdAt: new Date().toISOString()
+                        roundNo,
+                        p1Id: p1.isBye ? activePlayer.id : p1.id,
+                        p2Id: p2.isBye ? '' : p2.id,
+                        p1Score: isBye ? 0 : null,
+                        p2Score: isBye ? 0 : null,
+                        winnerId: isBye ? activePlayer.id : '',
+                        status: isBye ? 'Completed' : 'Pending',
+                        isBye,
+                        createdAt: new Date(now + ((roundNo - 1) * matchesPerRound + matchIndex)).toISOString()
                     });
                 }
+
+                rotation.splice(1, 0, rotation.pop());
             }
         }
 
@@ -1633,8 +1670,7 @@
             match.updatedAt = new Date().toISOString();
 
             if (tournament && tournament.format === 'round_robin') {
-                const tournamentFixtures = tournamentMatches.filter(m => m.tournamentId === tournament.id);
-                tournament.status = tournamentFixtures.every(m => m.status === 'Completed') ? 'Completed' : 'Active';
+                updateRoundRobinTournamentStatus(tournament);
             }
 
             if (tournament && tournament.format === 'knockout') {
@@ -1646,6 +1682,27 @@
 
             saveTournamentLocalData();
             renderAllDashboards();
+        }
+
+        function updateRoundRobinTournamentStatus(tournament) {
+            if (!tournament || tournament.format !== 'round_robin') return;
+
+            const playableFixtures = tournamentMatches.filter(m => m.tournamentId === tournament.id && !m.isBye);
+            if (playableFixtures.length === 0) {
+                tournament.status = 'Draft';
+                tournament.champion = '';
+                return;
+            }
+
+            const isCompleted = playableFixtures.every(m => m.status === 'Completed');
+            tournament.status = isCompleted ? 'Completed' : 'Active';
+            tournament.champion = isCompleted ? getRoundRobinChampionName(tournament.id) : '';
+        }
+
+        function refreshRoundRobinTournamentStatuses() {
+            tournaments
+                .filter(tournament => tournament.format === 'round_robin')
+                .forEach(updateRoundRobinTournamentStatus);
         }
 
         function handleKnockoutNextRound(tournamentId, currentRound) {
@@ -1674,6 +1731,60 @@
             return participant ? participant.name : 'Unknown';
         }
 
+        function getCompletedTournamentMatches(tournamentId) {
+            return tournamentMatches.filter(m => m.tournamentId === tournamentId && m.status === 'Completed' && !m.isBye && m.p1Id && m.p2Id);
+        }
+
+        function getHeadToHeadRecord(tournamentId, participantId, opponentId) {
+            return getCompletedTournamentMatches(tournamentId)
+                .filter(m =>
+                    (m.p1Id === participantId && m.p2Id === opponentId) ||
+                    (m.p1Id === opponentId && m.p2Id === participantId)
+                )
+                .reduce((record, m) => {
+                    const isP1 = m.p1Id === participantId;
+                    const goalsFor = isP1 ? Number(m.p1Score) : Number(m.p2Score);
+                    const goalsAgainst = isP1 ? Number(m.p2Score) : Number(m.p1Score);
+
+                    record.played++;
+                    record.goalsFor += goalsFor;
+                    record.goalsAgainst += goalsAgainst;
+                    if (goalsFor > goalsAgainst) record.points += 3;
+                    if (goalsFor === goalsAgainst) record.points += 1;
+                    return record;
+                }, { played: 0, points: 0, goalsFor: 0, goalsAgainst: 0 });
+        }
+
+        function compareTournamentStandingRows(tournamentId, a, b, useNameFallback = true) {
+            const regularComparison =
+                b.points - a.points ||
+                b.goalDifference - a.goalDifference ||
+                b.goalsFor - a.goalsFor ||
+                b.win - a.win;
+            if (regularComparison !== 0) return regularComparison;
+
+            const aHeadToHead = getHeadToHeadRecord(tournamentId, a.participantId, b.participantId);
+            const bHeadToHead = getHeadToHeadRecord(tournamentId, b.participantId, a.participantId);
+            const headToHeadComparison =
+                bHeadToHead.points - aHeadToHead.points ||
+                (bHeadToHead.goalsFor - bHeadToHead.goalsAgainst) - (aHeadToHead.goalsFor - aHeadToHead.goalsAgainst) ||
+                bHeadToHead.goalsFor - aHeadToHead.goalsFor;
+            if (headToHeadComparison !== 0) return headToHeadComparison;
+
+            return useNameFallback ? a.name.localeCompare(b.name) : 0;
+        }
+
+        function getRoundRobinChampionName(tournamentId) {
+            const standings = calculateTournamentStandings(tournamentId);
+            if (standings.length === 0) return '';
+            if (standings.length === 1) return standings[0].name;
+
+            const tiedLeaders = standings.filter(row => compareTournamentStandingRows(tournamentId, standings[0], row, false) === 0);
+            return tiedLeaders.length > 1
+                ? `Tied: ${tiedLeaders.map(row => row.name).join(', ')}`
+                : standings[0].name;
+        }
+
         function calculateTournamentStandings(tournamentId) {
             const participantRows = tournamentParticipants
                 .filter(p => p.tournamentId === tournamentId)
@@ -1691,8 +1802,7 @@
                 }));
 
             const standingsMap = Object.fromEntries(participantRows.map(row => [row.participantId, row]));
-            tournamentMatches
-                .filter(m => m.tournamentId === tournamentId && m.status === 'Completed' && !m.isBye && m.p1Id && m.p2Id)
+            getCompletedTournamentMatches(tournamentId)
                 .forEach(m => {
                     const p1 = standingsMap[m.p1Id];
                     const p2 = standingsMap[m.p2Id];
@@ -1726,7 +1836,7 @@
                     ...row,
                     goalDifference: row.goalsFor - row.goalsAgainst
                 }))
-                .sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor || a.name.localeCompare(b.name));
+                .sort((a, b) => compareTournamentStandingRows(tournamentId, a, b));
         }
 
         function syncTournamentSelect(selectId, selectedValue = '') {
@@ -1748,7 +1858,9 @@
             const tournamentId = getSelectedTournamentId('public-tournament-filter');
             const tournament = tournaments.find(t => t.id === tournamentId);
             const participants = tournamentParticipants.filter(p => p.tournamentId === tournamentId);
-            const fixtures = tournamentMatches.filter(m => m.tournamentId === tournamentId).sort((a, b) => a.roundNo - b.roundNo);
+            const fixtures = tournamentMatches
+                .filter(m => m.tournamentId === tournamentId)
+                .sort((a, b) => a.roundNo - b.roundNo || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
 
             document.getElementById('tournament-total-count').innerText = tournaments.length;
             document.getElementById('tournament-participants-count').innerText = participants.length;
@@ -1887,6 +1999,7 @@
                         <td class="p-3 text-right font-black text-green-600 font-mono">${p.wins}</td>
                         <td class="p-3 text-right font-black text-purple-600 font-mono">${winPercentage}%</td>
                         <td class="p-3 text-right font-black text-blue-600 font-mono">${p.goals}</td>
+                        <td class="p-3 text-right font-black text-red-600 font-mono">${p.conceded}</td>
                         <td class="p-3 text-right font-black text-indigo-600 font-mono">${goalsPerMatch}</td>
                     </tr>
                 `;
@@ -1979,52 +2092,95 @@
             const stats = getHeadToHeadStats(filteredMatches, playerOne, playerTwo);
             const playerOneWinPercentage = stats.total ? ((stats.playerOneWins / stats.total) * 100).toFixed(1) : '0.0';
             const playerTwoWinPercentage = stats.total ? ((stats.playerTwoWins / stats.total) * 100).toFixed(1) : '0.0';
+            const drawPercentage = stats.total ? ((stats.draws / stats.total) * 100).toFixed(1) : '0.0';
+            const playerOneShare = playerOneWinPercentage;
+            const playerTwoShare = playerTwoWinPercentage;
+            const drawShare = drawPercentage;
+            const playerOneGoalDifference = stats.playerOneGoals - stats.playerTwoGoals;
+            const playerTwoGoalDifference = stats.playerTwoGoals - stats.playerOneGoals;
+            const leaderName = stats.playerOneWins === stats.playerTwoWins
+                ? 'Even matchup'
+                : stats.playerOneWins > stats.playerTwoWins
+                    ? playerOne
+                    : playerTwo;
             summary.innerHTML = `
-                <div class="bg-blue-50 border border-blue-200 rounded p-3">
-                    <p class="text-xs text-blue-700 font-bold uppercase">Matches Played</p>
-                    <p class="text-2xl font-black text-blue-900">${stats.total}</p>
-                </div>
-                <div class="bg-green-50 border border-green-200 rounded p-3">
-                    <p align="center" class="text-xl text-green-700 font-bold uppercase">${escapeHtml(playerOne)}</p>
-                    <div class="mt-2 grid grid-cols-3 gap-3">
-                        <div>
-                            <p align="left" class="text-[10px] text-green-700 font-bold uppercase">Wins</p>
-                            <p align="left" class="text-2l font-black text-green-900">${stats.playerOneWins}</p>
-                        </div>
-                    
-                        <div>
-                            <p align="center" class="text-[10px] text-green-700 font-bold uppercase">Goals</p>
-                            <p align="center" class="text-2l font-black text-green-900">${stats.playerOneGoals}</p>
-                        </div>
-
+                <div class="sm:col-span-2 xl:col-span-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+                    <div class="bg-gray-900 px-4 py-3 text-white">
+                        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                             <div>
-                            <p align="right" class="text-[10px] text-green-700 font-bold uppercase">Win %</p>
-                            <p align="right" class="text-2l font-black text-green-900">${playerOneWinPercentage}%</p>
+                                <p class="text-xs font-bold uppercase tracking-wide text-gray-300">Head-to-Head Performance</p>
+                                <h4 class="mt-1 text-lg font-black leading-tight">${escapeHtml(playerOne)} <span class="text-gray-400">VS</span> ${escapeHtml(playerTwo)}</h4>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 text-center">
+                                <div class="rounded bg-white/10 px-3 py-2">
+                                    <p class="text-[10px] font-bold uppercase text-gray-300">Matches</p>
+                                    <p class="text-xl font-black">${stats.total}</p>
+                                </div>
+                                <div class="rounded bg-white/10 px-3 py-2">
+                                    <p class="text-[10px] font-bold uppercase text-gray-300">Draws</p>
+                                    <p class="text-xl font-black">${stats.draws}</p>
+                                </div>
+                                <div class="rounded bg-white/10 px-3 py-2">
+                                    <p class="text-[10px] font-bold uppercase text-gray-300">Leader</p>
+                                    <p class="max-w-28 truncate text-sm font-black">${escapeHtml(leaderName)}</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div align="center" class="bg-yellow-50 border border-yellow-200 rounded p-3">
-                    <p class="text-xl text-yellow-700 font-bold uppercase">${escapeHtml(playerTwo)}</p>
-                    <div class="mt-2 grid grid-cols-3 gap-3">
-                        <div>
-                            <p align="left" class="text-[10px] text-yellow-700 font-bold uppercase">Wins</p>
-                            <p align="left" class="text-2l font-black text-yellow-900">${stats.playerTwoWins}</p>
+                    <div class="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
+                        <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                            <p class="truncate text-center text-xl font-black uppercase text-emerald-800">${escapeHtml(playerOne)}</p>
+                            <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+                                <div class="rounded bg-white p-3 shadow-sm">
+                                    <p class="text-[10px] font-bold uppercase text-emerald-700">Wins</p>
+                                    <p class="text-2xl font-black text-emerald-900">${stats.playerOneWins}</p>
+                                </div>
+                                <div class="rounded bg-white p-3 shadow-sm">
+                                    <p class="text-[10px] font-bold uppercase text-emerald-700">Goals</p>
+                                    <p class="text-2xl font-black text-emerald-900">${stats.playerOneGoals}</p>
+                                </div>
+                                <div class="rounded bg-white p-3 shadow-sm">
+                                    <p class="text-[10px] font-bold uppercase text-emerald-700">Win %</p>
+                                    <p class="text-2xl font-black text-emerald-900">${playerOneWinPercentage}%</p>
+                                </div>
+                            </div>
+                            <p class="mt-3 text-center text-xs font-bold uppercase text-emerald-700">Goal difference ${playerOneGoalDifference > 0 ? '+' : ''}${playerOneGoalDifference}</p>
                         </div>
-                       
-                        <div>
-                            <p align="center" class="text-[10px] text-yellow-700 font-bold uppercase">Goals</p>
-                            <p align="center" class="text-2l font-black text-yellow-900">${stats.playerTwoGoals}</p>
+                        <div class="flex items-center justify-center">
+                            <div class="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-sm font-black text-gray-700 shadow-inner">VS</div>
                         </div>
-                         <div>
-                            <p align="right" class="text-[10px] text-yellow-700 font-bold uppercase">Win %</p>
-                            <p align="right" class="text-2l font-black text-yellow-900">${playerTwoWinPercentage}%</p>
+                        <div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                            <p class="truncate text-center text-xl font-black uppercase text-amber-800">${escapeHtml(playerTwo)}</p>
+                            <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+                                <div class="rounded bg-white p-3 shadow-sm">
+                                    <p class="text-[10px] font-bold uppercase text-amber-700">Wins</p>
+                                    <p class="text-2xl font-black text-amber-900">${stats.playerTwoWins}</p>
+                                </div>
+                                <div class="rounded bg-white p-3 shadow-sm">
+                                    <p class="text-[10px] font-bold uppercase text-amber-700">Goals</p>
+                                    <p class="text-2xl font-black text-amber-900">${stats.playerTwoGoals}</p>
+                                </div>
+                                <div class="rounded bg-white p-3 shadow-sm">
+                                    <p class="text-[10px] font-bold uppercase text-amber-700">Win %</p>
+                                    <p class="text-2xl font-black text-amber-900">${playerTwoWinPercentage}%</p>
+                                </div>
+                            </div>
+                            <p class="mt-3 text-center text-xs font-bold uppercase text-amber-700">Goal difference ${playerTwoGoalDifference > 0 ? '+' : ''}${playerTwoGoalDifference}</p>
                         </div>
                     </div>
-                </div>
-                
-                <div class="bg-gray-50 border border-gray-300 rounded p-3">
-                    <p class="text-xs text-gray-700 font-bold uppercase">Draws</p>
-                    <p class="text-2xl font-black text-gray-900">${stats.draws}</p>
+                    <div class="border-t border-gray-200 bg-gray-50 px-4 py-3">
+                        <div class="flex items-center justify-between gap-3 text-xs font-bold uppercase text-gray-600">
+                            <span class="truncate">${escapeHtml(playerOne)} win ${playerOneShare}%</span>
+                            <span>Draw ${drawShare}%</span>
+                            <span class="truncate text-right">${escapeHtml(playerTwo)} win ${playerTwoShare}%</span>
+                        </div>
+                        <div class="mt-2 flex h-3 overflow-hidden rounded-full bg-gray-200">
+                            <div class="bg-emerald-500" style="width: ${playerOneShare}%"></div>
+                            <div class="bg-gray-400" style="width: ${drawShare}%"></div>
+                            <div class="bg-amber-500" style="width: ${playerTwoShare}%"></div>
+                        </div>
+                        <p class="mt-2 text-center text-[10px] font-bold uppercase text-gray-500">Win and draw share by total head-to-head matches</p>
+                    </div>
                 </div>
             `;
         }
