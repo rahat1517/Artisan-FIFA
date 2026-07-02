@@ -544,7 +544,7 @@
                 <div class="table-scroll panel-scroll bg-white p-3 sm:p-4 rounded-lg shadow-sm border">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-gray-100 text-gray-700 text-sm uppercase">
+                            <tr class="bg-gray-100 text-black-700 text-sm uppercase">
                                 <th class="p-3 border">Rank</th>
                                 <th class="p-3 border">Player</th>
                                 <th class="p-3 border text-right">Total Matches</th>
@@ -562,29 +562,36 @@
                         <tbody id="leaderboard-list"></tbody>
                     </table>
                 </div>
+                <div class="mt-1 flex justify-end gap-2 text-[10px] font-bold normal-case text-gray-500 uppercase">
+                    <span class="inline-flex items-center gap-1"><span class="inline-block h-2.5 w-2.5 rounded-full bg-green-500"></span>Win</span>
+                    <span class="inline-flex items-center gap-1"><span class="inline-block h-2.5 w-2.5 rounded-full bg-red-500"></span>Loss</span>
+                     <span class="inline-flex items-center gap-1"><span class="inline-block h-2.5 w-2.5 rounded-full bg-gray-400"></span>Draw</span>
+                </div>
             </section>
 
             <section id="history-panel" class="dashboard-view hidden space-y-6">
                 <h3 class="text-2xl font-bold text-gray-800">All Match Results</h3>
-                <div class="bg-white p-4 rounded-lg shadow-sm border">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+                    <div class="overflow-x-auto p-4">
+                    <div class="grid min-w-[760px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_190px_130px] gap-4 items-end">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-600 mb-1">Player 1</label>
-                            <select id="history-filter-player-one" onchange="renderHistory()" class="w-full p-2 border rounded bg-white"></select>
+                            <label class="mb-1 block text-xs font-black uppercase tracking-wide text-gray-500">Player 1</label>
+                            <select id="history-filter-player-one" onchange="renderHistory()" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-gray-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"></select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-gray-600 mb-1">Player 2</label>
-                            <select id="history-filter-player-two" onchange="renderHistory()" class="w-full p-2 border rounded bg-white"></select>
+                            <label class="mb-1 block text-xs font-black uppercase tracking-wide text-gray-500">Player 2</label>
+                            <select id="history-filter-player-two" onchange="renderHistory()" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-gray-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"></select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-gray-600 mb-1">Date</label>
-                            <input type="date" id="history-filter-date" onchange="renderHistory()" class="w-full p-2 border rounded bg-white">
+                            <label class="mb-1 block text-xs font-black uppercase tracking-wide text-gray-500">Date</label>
+                            <input type="date" id="history-filter-date" onchange="renderHistory()" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-gray-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
                         </div>
-                        <button type="button" onclick="clearHistoryFilter()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded">
+                        <button type="button" onclick="clearHistoryFilter()" class="h-[42px] rounded-lg bg-gray-900 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-gray-800">
                             Clear Filter
                         </button>
                     </div>
-                    <div id="history-filter-summary" class="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3"></div>
+                    </div>
+                    <div id="history-filter-summary" class="grid grid-cols-1 gap-3 px-4 pb-4 sm:grid-cols-2 xl:grid-cols-4"></div>
                 </div>
                 <div class="table-scroll bg-white p-3 sm:p-4 rounded-lg shadow-sm border">
                     <table class="w-full text-left border-collapse">
@@ -908,6 +915,34 @@
         let selectedMatchForEdit = null;
         let isAdminLoggedIn = false;
         let topScorerIntroShown = false;
+
+        const PLAYER_NAME_COLORS = [
+            '#047857',
+            '#1d4ed8',
+            '#be123c',
+            '#7c3aed',
+            '#c2410c',
+            '#0e7490',
+            '#a16207',
+            '#4338ca',
+            '#15803d',
+            '#be185d'
+        ];
+
+        function getPlayerNameColor(name) {
+            const normalizedName = String(name || '').trim().toLowerCase();
+            let hash = 0;
+            for (let i = 0; i < normalizedName.length; i++) {
+                hash = ((hash << 5) - hash) + normalizedName.charCodeAt(i);
+                hash |= 0;
+            }
+            return PLAYER_NAME_COLORS[Math.abs(hash) % PLAYER_NAME_COLORS.length];
+        }
+
+        function renderColoredPlayerName(name, extraClass = '') {
+            return `<span class="${extraClass}" style="color: ${getPlayerNameColor(name)};">${escapeHtml(name)}</span>`;
+        }
+
         function getApiBaseUrl() {
             if (window.GOAL_TRACKER_API_BASE_URL) return window.GOAL_TRACKER_API_BASE_URL;
             if (window.location.protocol === 'file:') return 'http://localhost:5000';
@@ -2055,7 +2090,7 @@
                 return `
                     <tr class="border-b">
                         <td class="p-3 font-bold">${idx + 1}</td>
-                        <td class="p-3 font-semibold text-gray-700">${escapeHtml(p.name)}</td>
+                        <td class="p-3 font-semibold">${renderColoredPlayerName(p.name)}</td>
                         <td class="p-3 text-right font-black text-gray-700 font-mono">${matchesPlayed}</td>
                         <td class="p-3 text-right font-black text-green-600 font-mono">${p.wins}</td>
                         <td class="p-3 text-right font-black text-yellow-600 font-mono">${p.draws}</td>
@@ -2178,7 +2213,7 @@
                         <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <p class="text-xs font-bold uppercase tracking-wide text-gray-300">Head-to-Head Performance</p>
-                                <h4 class="mt-1 text-lg font-black leading-tight">${escapeHtml(playerOne)} <span class="text-gray-400">VS</span> ${escapeHtml(playerTwo)}</h4>
+                                <h4 class="mt-1 text-lg font-black leading-tight">${renderColoredPlayerName(playerOne)} <span class="text-gray-400">VS</span> ${renderColoredPlayerName(playerTwo)}</h4>
                             </div>
                             <div class="grid grid-cols-3 gap-2 text-center">
                                 <div class="rounded bg-white/10 px-3 py-2">
@@ -2191,14 +2226,14 @@
                                 </div>
                                 <div class="rounded bg-white/10 px-3 py-2">
                                     <p class="text-[10px] font-bold uppercase text-gray-300">Leader</p>
-                                    <p class="max-w-28 truncate text-sm font-black">${escapeHtml(leaderName)}</p>
+                                    <p class="max-w-28 truncate text-sm font-black">${leaderName === 'Even matchup' ? escapeHtml(leaderName) : renderColoredPlayerName(leaderName)}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
                         <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                            <p class="truncate text-center text-xl font-black uppercase text-emerald-800">${escapeHtml(playerOne)}</p>
+                            <p class="truncate text-center text-xl font-black uppercase">${renderColoredPlayerName(playerOne)}</p>
                             <div class="mt-4 grid grid-cols-3 gap-3 text-center">
                                 <div class="rounded bg-white p-3 shadow-sm">
                                     <p class="text-[10px] font-bold uppercase text-emerald-700">Wins</p>
@@ -2219,7 +2254,7 @@
                             <div class="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-sm font-black text-gray-700 shadow-inner">VS</div>
                         </div>
                         <div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                            <p class="truncate text-center text-xl font-black uppercase text-amber-800">${escapeHtml(playerTwo)}</p>
+                            <p class="truncate text-center text-xl font-black uppercase">${renderColoredPlayerName(playerTwo)}</p>
                             <div class="mt-4 grid grid-cols-3 gap-3 text-center">
                                 <div class="rounded bg-white p-3 shadow-sm">
                                     <p class="text-[10px] font-bold uppercase text-amber-700">Wins</p>
@@ -2239,9 +2274,9 @@
                     </div>
                     <div class="border-t border-gray-200 bg-gray-50 px-4 py-3">
                         <div class="flex items-center justify-between gap-3 text-xs font-bold uppercase text-gray-600">
-                            <span class="truncate">${escapeHtml(playerOne)} win ${playerOneShare}%</span>
+                            <span class="truncate">${renderColoredPlayerName(playerOne)} win ${playerOneShare}%</span>
                             <span>Draw ${drawShare}%</span>
-                            <span class="truncate text-right">${escapeHtml(playerTwo)} win ${playerTwoShare}%</span>
+                            <span class="truncate text-right">${renderColoredPlayerName(playerTwo)} win ${playerTwoShare}%</span>
                         </div>
                         <div class="mt-2 flex h-3 overflow-hidden rounded-full bg-gray-200">
                             <div class="bg-emerald-500" style="width: ${playerOneShare}%"></div>
@@ -2275,15 +2310,19 @@
 
             const container = document.getElementById('history-list');
             container.innerHTML = historyMatches.length ? historyMatches.map(m => {
-                let outcome = "Draw / Tie";
-                if (m.p1Score > m.p2Score) outcome = `<span class="text-green-600 font-bold">${escapeHtml(m.p1Name)} Wins</span>`;
-                if (m.p2Score > m.p1Score) outcome = `<span class="text-green-600 font-bold">${escapeHtml(m.p2Name)} Wins</span>`;
+                let outcome = '<span class="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-black text-gray-600">Draw / Tie</span>';
+                if (m.p1Score > m.p2Score) {
+                    outcome = `<span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-black text-green-700 ring-1 ring-green-200">${renderColoredPlayerName(m.p1Name)} <span class="text-green-700">Wins</span></span>`;
+                }
+                if (m.p2Score > m.p1Score) {
+                    outcome = `<span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-black text-green-700 ring-1 ring-green-200">${renderColoredPlayerName(m.p2Name)} <span class="text-green-700">Wins</span></span>`;
+                }
                 return `
                     <tr class="border-b text-sm">
                         <td class="p-3 text-gray-500">${escapeHtml(m.date)}</td>
-                        <td class="p-3 font-medium">${escapeHtml(m.p1Name)}</td>
+                        <td class="p-3 font-medium">${renderColoredPlayerName(m.p1Name)}</td>
                         <td class="p-3 text-center font-mono font-bold bg-gray-50">${m.p1Score} - ${m.p2Score}</td>
-                        <td class="p-3 font-medium">${escapeHtml(m.p2Name)}</td>
+                        <td class="p-3 font-medium">${renderColoredPlayerName(m.p2Name)}</td>
                         <td class="p-3 text-center">${outcome}</td>
                     </tr>
                 `;
@@ -2296,7 +2335,7 @@
             container.innerHTML = matches.map(m => `
                 <tr class="hover:bg-gray-50 border-b">
                     <td class="p-3 text-sm">${escapeHtml(m.date)}</td>
-                    <td class="p-3 font-semibold text-sm">${escapeHtml(m.p1Name)} vs ${escapeHtml(m.p2Name)}</td>
+                    <td class="p-3 font-semibold text-sm">${renderColoredPlayerName(m.p1Name)} vs ${renderColoredPlayerName(m.p2Name)}</td>
                     <td class="p-3 text-center font-mono text-sm">${m.p1Score} - ${m.p2Score}</td>
                     <td class="p-3 text-center"><button onclick="openEditModal('${m.id}')" class="text-blue-600 hover:underline text-sm font-bold">Edit</button></td>
                 </tr>
