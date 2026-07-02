@@ -131,25 +131,36 @@ async function ensureTournamentTables() {
         CREATE OR REPLACE VIEW view_leaderboard AS
         SELECT
             player_name,
-            SUM(goals) AS total_goals,
+            SUM(goals_for) AS total_goals,
+            SUM(goals_for) AS goals_for,
+            SUM(goals_against) AS goals_against,
+            SUM(goals_for) - SUM(goals_against) AS goal_difference,
             SUM(wins) AS total_wins,
+            SUM(draws) AS total_draws,
+            SUM(losses) AS total_losses,
             COUNT(*) AS total_matches,
-            ROUND(AVG(goals)::numeric, 2) AS goals_per_match
+            ROUND(AVG(goals_for)::numeric, 2) AS goals_per_match
         FROM (
             SELECT
                 player1_name AS player_name,
-                player1_score AS goals,
-                CASE WHEN player1_score > player2_score THEN 1 ELSE 0 END AS wins
+                player1_score AS goals_for,
+                player2_score AS goals_against,
+                CASE WHEN player1_score > player2_score THEN 1 ELSE 0 END AS wins,
+                CASE WHEN player1_score = player2_score THEN 1 ELSE 0 END AS draws,
+                CASE WHEN player1_score < player2_score THEN 1 ELSE 0 END AS losses
             FROM matches
             UNION ALL
             SELECT
                 player2_name AS player_name,
-                player2_score AS goals,
-                CASE WHEN player2_score > player1_score THEN 1 ELSE 0 END AS wins
+                player2_score AS goals_for,
+                player1_score AS goals_against,
+                CASE WHEN player2_score > player1_score THEN 1 ELSE 0 END AS wins,
+                CASE WHEN player2_score = player1_score THEN 1 ELSE 0 END AS draws,
+                CASE WHEN player2_score < player1_score THEN 1 ELSE 0 END AS losses
             FROM matches
         ) player_rows
         GROUP BY player_name
-        ORDER BY total_goals DESC, total_wins DESC, player_name ASC;
+        ORDER BY total_goals DESC, total_wins DESC, goal_difference DESC, player_name ASC;
     `);
 }
 
